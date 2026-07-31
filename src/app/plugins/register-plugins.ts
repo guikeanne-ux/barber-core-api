@@ -6,6 +6,7 @@ import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 
 import type { ApplicationConfiguration } from '../configuration/configuration-schema.js';
+import { AuthenticationProblem } from '../../modules/auth/authentication-errors.js';
 import {
   createProblemDetails,
   type ProblemFieldError,
@@ -59,7 +60,20 @@ export async function registerCorePlugins(
           name: 'System',
           description: 'Technical endpoints of the API foundation',
         },
+        {
+          name: 'Auth',
+          description: 'Authentication and authorization technical endpoints',
+        },
       ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+          },
+        },
+      },
     },
   });
 
@@ -73,6 +87,7 @@ export async function registerCorePlugins(
   });
 
   app.decorateRequest('receivedAtNs', 0n);
+  app.decorateRequest('identity', null);
 
   app.addHook('onRequest', async (request, reply) => {
     request.receivedAtNs = process.hrtime.bigint();
@@ -121,6 +136,42 @@ export async function registerCorePlugins(
   });
 
   app.setErrorHandler((error, request, reply) => {
+    if (error instanceof AuthenticationProblem) {
+      request.log.warn(
+        {
+          requestId: request.id,
+          route: request.url,
+          statusCode: error.statusCode,
+          authenticationFailureCategory: error.failureCategory,
+        },
+        'authentication_failed',
+      );
+
+      if (error.headers) {
+        for (const [name, value] of Object.entries(error.headers)) {
+          reply.header(name, value);
+        }
+      }
+
+      return reply
+        .code(error.statusCode)
+        .type('application/problem+json')
+        .send(
+          createProblemDetails(request, {
+            type: error.type,
+            title:
+              error.statusCode === 403
+                ? 'Forbidden'
+                : error.statusCode === 503
+                  ? 'Service Unavailable'
+                  : 'Unauthorized',
+            status: error.statusCode,
+            detail: error.detail,
+            code: error.code,
+          }),
+        );
+    }
+
     request.log.error(
       {
         requestId: request.id,

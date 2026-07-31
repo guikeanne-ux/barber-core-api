@@ -36,6 +36,11 @@ function createBuiltApplication(
           CORS_ORIGIN: 'http://localhost:5173',
           APP_VERSION: '0.1.0',
           SHUTDOWN_TIMEOUT_MS: options.shutdownTimeoutMs ?? 50,
+          OIDC_ISSUER_URL: 'http://localhost:8080/realms/barber',
+          OIDC_JWKS_URL: 'http://localhost:8080/realms/barber/protocol/openid-connect/certs',
+          OIDC_AUDIENCE: 'barber-core-api',
+          OIDC_CLOCK_TOLERANCE_SECONDS: 5,
+          OIDC_JWKS_TIMEOUT_MS: 3000,
         },
         database: {
           db: {
@@ -44,6 +49,7 @@ function createBuiltApplication(
           pool: {} as never,
         },
         readinessProbe: () => Promise.resolve({ ready: true }),
+        verifyAccessToken: vi.fn(),
       },
     } as unknown as BuiltApplication,
   };

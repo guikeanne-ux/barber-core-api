@@ -3,6 +3,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 
 import type { BuiltApplication, ApplicationDependencies } from './application-types.js';
 import { registerCorePlugins } from './plugins/register-plugins.js';
+import { authRoutes } from '../modules/auth/routes.js';
 import { resolveRequestId } from '../shared/http/request-id.js';
 import { systemRoutes } from '../modules/system/system-routes.js';
 
@@ -42,6 +43,9 @@ export async function buildApplication(
 
   await registerCorePlugins(app, {
     configuration: dependencies.configuration,
+  });
+  await app.register(authRoutes, {
+    verifyAccessToken: dependencies.verifyAccessToken,
   });
   await app.register(systemRoutes, {
     configuration: dependencies.configuration,

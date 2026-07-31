@@ -2,9 +2,12 @@ import { access } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { loadConfiguration } from '../app/configuration/load-config.js';
-import { createDependencies } from '../app/create-dependencies.js';
-import { closeDatabaseConnection, runMigrations } from '../shared/database/database.js';
+import { loadMigrationConfiguration } from '../app/configuration/load-config.js';
+import {
+  closeDatabaseConnection,
+  createDatabaseConnection,
+  runMigrations,
+} from '../shared/database/database.js';
 
 const currentDir = path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,13 +29,13 @@ async function resolveMigrationsPath(): Promise<string> {
   throw new Error('Unable to resolve migrations directory.');
 }
 
-const configuration = loadConfiguration();
-const dependencies = createDependencies(configuration);
+const configuration = loadMigrationConfiguration();
+const database = createDatabaseConnection(configuration.DATABASE_URL);
 
 try {
   const migrationsPath = await resolveMigrationsPath();
   const summary = await runMigrations({
-    connection: dependencies.database,
+    connection: database,
     migrationsPath,
   });
 
@@ -42,5 +45,5 @@ try {
 
   console.log(`Migrations completed. Applied entries: ${String(summary.results.length)}`);
 } finally {
-  await closeDatabaseConnection(dependencies.database);
+  await closeDatabaseConnection(database);
 }

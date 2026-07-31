@@ -46,7 +46,7 @@ services:
       migrate:
         condition: service_completed_successfully
     environment:
-      NODE_ENV: production
+      NODE_ENV: development
       HOST: 0.0.0.0
       PORT: 3000
       LOG_LEVEL: info
@@ -54,6 +54,11 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
       APP_VERSION: ${APP_VERSION:-0.1.0}
       SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-10000}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-http://localhost:8080/realms/barber}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://localhost:8080/realms/barber/protocol/openid-connect/certs}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-barber-core-api}
+      OIDC_CLOCK_TOLERANCE_SECONDS: ${OIDC_CLOCK_TOLERANCE_SECONDS:-5}
+      OIDC_JWKS_TIMEOUT_MS: ${OIDC_JWKS_TIMEOUT_MS:-3000}
     ports:
       - '${API_PORT:-3000}:3000'
     healthcheck:

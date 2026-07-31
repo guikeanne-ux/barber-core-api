@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
-import { loadConfiguration } from '../../src/app/configuration/load-config.js';
+import {
+  loadConfiguration,
+  loadMigrationConfiguration,
+} from '../../src/app/configuration/load-config.js';
 
 describe('loadConfiguration', () => {
   it('loads valid configuration', () => {
@@ -12,10 +15,19 @@ describe('loadConfiguration', () => {
       DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
       CORS_ORIGIN: 'http://localhost:5173',
       APP_VERSION: '0.1.0',
+      OIDC_ISSUER_URL: 'http://localhost:8080/realms/barber/',
+      OIDC_JWKS_URL: 'http://localhost:8080/realms/barber/protocol/openid-connect/certs/',
+      OIDC_AUDIENCE: 'barber-core-api',
+      OIDC_CLOCK_TOLERANCE_SECONDS: '5',
+      OIDC_JWKS_TIMEOUT_MS: '3000',
     });
 
     expect(configuration.PORT).toBe(3333);
     expect(configuration.SHUTDOWN_TIMEOUT_MS).toBe(10_000);
+    expect(configuration.OIDC_ISSUER_URL).toBe('http://localhost:8080/realms/barber');
+    expect(configuration.OIDC_JWKS_URL).toBe(
+      'http://localhost:8080/realms/barber/protocol/openid-connect/certs',
+    );
     expect(Object.isFrozen(configuration)).toBe(true);
   });
 
@@ -29,6 +41,11 @@ describe('loadConfiguration', () => {
         DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
         CORS_ORIGIN: 'http://localhost:5173',
         APP_VERSION: '0.1.0',
+        OIDC_ISSUER_URL: 'http://localhost:8080/realms/barber',
+        OIDC_JWKS_URL: 'http://localhost:8080/realms/barber/protocol/openid-connect/certs',
+        OIDC_AUDIENCE: 'barber-core-api',
+        OIDC_CLOCK_TOLERANCE_SECONDS: '5',
+        OIDC_JWKS_TIMEOUT_MS: '3000',
       }),
     ).toThrow(/PORT/);
   });
@@ -43,6 +60,11 @@ describe('loadConfiguration', () => {
         DATABASE_URL: '',
         CORS_ORIGIN: 'http://localhost:5173',
         APP_VERSION: '0.1.0',
+        OIDC_ISSUER_URL: 'http://localhost:8080/realms/barber',
+        OIDC_JWKS_URL: 'http://localhost:8080/realms/barber/protocol/openid-connect/certs',
+        OIDC_AUDIENCE: 'barber-core-api',
+        OIDC_CLOCK_TOLERANCE_SECONDS: '5',
+        OIDC_JWKS_TIMEOUT_MS: '3000',
       }),
     ).toThrow(/Invalid application configuration/);
   });
@@ -57,8 +79,45 @@ describe('loadConfiguration', () => {
       CORS_ORIGIN: 'http://localhost:5173',
       APP_VERSION: '0.1.0',
       SHUTDOWN_TIMEOUT_MS: '2500',
+      OIDC_ISSUER_URL: 'http://localhost:8080/realms/barber',
+      OIDC_JWKS_URL: 'http://localhost:8080/realms/barber/protocol/openid-connect/certs',
+      OIDC_AUDIENCE: 'barber-core-api',
+      OIDC_CLOCK_TOLERANCE_SECONDS: '5',
+      OIDC_JWKS_TIMEOUT_MS: '3000',
     });
 
     expect(configuration.SHUTDOWN_TIMEOUT_MS).toBe(2500);
+  });
+
+  it('fails when production OIDC URLs do not use HTTPS', () => {
+    expect(() =>
+      loadConfiguration({
+        NODE_ENV: 'production',
+        HOST: '127.0.0.1',
+        PORT: '3333',
+        LOG_LEVEL: 'info',
+        DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+        CORS_ORIGIN: 'http://localhost:5173',
+        APP_VERSION: '0.1.0',
+        OIDC_ISSUER_URL: 'http://localhost:8080/realms/barber',
+        OIDC_JWKS_URL: 'http://localhost:8080/realms/barber/protocol/openid-connect/certs',
+        OIDC_AUDIENCE: 'barber-core-api',
+        OIDC_CLOCK_TOLERANCE_SECONDS: '5',
+        OIDC_JWKS_TIMEOUT_MS: '3000',
+      }),
+    ).toThrow(/must use HTTPS/);
+  });
+
+  it('loads migration configuration without OIDC variables', () => {
+    const configuration = loadMigrationConfiguration({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+    });
+
+    expect(configuration).toEqual({
+      NODE_ENV: 'test',
+      DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+    });
+    expect(Object.isFrozen(configuration)).toBe(true);
   });
 });

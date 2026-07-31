@@ -40,6 +40,7 @@
     "@fastify/type-provider-typebox": "^6.1.0",
     "@sinclair/typebox": "^0.34.41",
     "fastify": "^5.6.1",
+    "jose": "^6.2.4",
     "kysely": "^0.28.8",
     "pg": "^8.16.3"
   },

@@ -29,6 +29,13 @@ wait_for_url "OpenAPI" "${BASE_URL}/docs/json"
 
 curl -fsS "${BASE_URL}/health" | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (json.service !== 'barber-core-api') process.exit(1); })"
 curl -fsS "${BASE_URL}/docs/json" | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (json.openapi !== '3.1.0') process.exit(1); })"
+curl -fsS "${BASE_URL}/docs/json" | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (json.components?.securitySchemes?.bearerAuth?.scheme !== 'bearer') process.exit(1); })"
+
+auth_status="$(curl -sS -o /tmp/barber-core-api-auth-me.json -w '%{http_code}' "${BASE_URL}/api/v1/auth/me")"
+if [[ "$auth_status" != "401" ]]; then
+  echo "Expected /api/v1/auth/me without credentials to return 401, got ${auth_status}" >&2
+  exit 1
+fi
+node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-auth-me.json', 'utf8')); if (json.code !== 'AUTHENTICATION_REQUIRED') process.exit(1);"
 
 echo "Smoke tests passed."
-
