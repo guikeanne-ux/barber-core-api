@@ -7,6 +7,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
 import { registerCorePlugins } from '../../src/app/plugins/register-plugins.js';
 import { authenticateRequest } from '../../src/modules/auth/authenticate-request.js';
+import type { VerifyAccessToken } from '../../src/modules/auth/verify-access-token.js';
 import { authRoutes } from '../../src/modules/auth/routes.js';
 import { requireAnyRole } from '../../src/modules/auth/require-any-role.js';
 import { createVerifyAccessToken } from '../../src/modules/auth/verify-access-token.js';
@@ -14,6 +15,7 @@ import {
   generateSigningKeyPair,
   JwksTestServer,
   signAccessToken,
+  signArbitraryAccessToken,
   TEST_AUDIENCE,
   TEST_ISSUER,
 } from './helpers/jwks-test-server.js';
@@ -26,7 +28,9 @@ interface ProblemDetailsResponse {
 async function buildAuthTestApplication(input: {
   jwksUrl: string;
   jwksTimeoutMs?: number;
+  oidcClockToleranceSeconds?: number;
   logLines?: string[];
+  verifyAccessToken?: VerifyAccessToken;
 }): Promise<FastifyInstance> {
   const app = fastify({
     logger: input.logLines
@@ -52,18 +56,20 @@ async function buildAuthTestApplication(input: {
     },
   });
 
-  const verifyAccessToken = createVerifyAccessToken(
-    {
-      OIDC_ISSUER_URL: TEST_ISSUER,
-      OIDC_JWKS_URL: input.jwksUrl,
-      OIDC_AUDIENCE: TEST_AUDIENCE,
-      OIDC_CLOCK_TOLERANCE_SECONDS: 1,
-      OIDC_JWKS_TIMEOUT_MS: input.jwksTimeoutMs ?? 300,
-    },
-    {
-      cooldownDurationMs: 0,
-    },
-  );
+  const verifyAccessToken =
+    input.verifyAccessToken ??
+    createVerifyAccessToken(
+      {
+        OIDC_ISSUER_URL: TEST_ISSUER,
+        OIDC_JWKS_URL: input.jwksUrl,
+        OIDC_AUDIENCE: TEST_AUDIENCE,
+        OIDC_CLOCK_TOLERANCE_SECONDS: input.oidcClockToleranceSeconds ?? 1,
+        OIDC_JWKS_TIMEOUT_MS: input.jwksTimeoutMs ?? 300,
+      },
+      {
+        cooldownDurationMs: 0,
+      },
+    );
 
   await app.register(authRoutes, {
     verifyAccessToken,
@@ -164,7 +170,7 @@ describe('auth HTTP integration', () => {
     }
   });
 
-  it('returns 401 for malformed bearer tokens', async () => {
+  it('returns 401 for malformed bearer credentials', async () => {
     const app = await buildAuthTestApplication({
       jwksUrl: jwksServer.url,
     });
@@ -223,6 +229,58 @@ describe('auth HTTP integration', () => {
     }
   });
 
+  it('accepts tokens whose audience claim is an array containing the API audience', async () => {
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+    });
+    const token = await signAccessToken(primaryKey, {
+      aud: ['barber-web-app', TEST_AUDIENCE],
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toMatchObject({
+        subject: 'subject-123',
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('rejects tokens whose audience array does not contain the API audience', async () => {
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+    });
+    const token = await signAccessToken(primaryKey, {
+      aud: ['barber-web-app', 'barber-notification-service'],
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toMatchObject({
+        code: 'INVALID_ACCESS_TOKEN',
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
   it('returns an empty roles array when the token has no barber-core-api roles', async () => {
     const app = await buildAuthTestApplication({
       jwksUrl: jwksServer.url,
@@ -249,14 +307,14 @@ describe('auth HTTP integration', () => {
     }
   });
 
-  it('drops unknown and case-variant roles while preserving deterministic ordering', async () => {
+  it('accepts only exact supported roles, removes duplicates, and keeps deterministic ordering', async () => {
     const app = await buildAuthTestApplication({
       jwksUrl: jwksServer.url,
     });
     const token = await signAccessToken(primaryKey, {
       resource_access: {
         [TEST_AUDIENCE]: {
-          roles: ['barber', 'manager', 'barber', 'ADMIN', 'unknown'],
+          roles: ['barber', 'manager', 'Manager', 'ADMIN', ' receptionist', 'manager'],
         },
       },
     });
@@ -273,6 +331,194 @@ describe('auth HTTP integration', () => {
       expect(response.statusCode).toBe(200);
       expect(response.json()).toMatchObject({
         roles: ['manager', 'barber'],
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it.each([
+    { description: 'resource_access is not an object', payload: { resource_access: 'invalid' } },
+    {
+      description: 'client access is not an object',
+      payload: { resource_access: { [TEST_AUDIENCE]: 'invalid' } },
+    },
+    {
+      description: 'roles is not an array',
+      payload: { resource_access: { [TEST_AUDIENCE]: { roles: 'manager' } } },
+    },
+    {
+      description: 'roles contains non-string values',
+      payload: { resource_access: { [TEST_AUDIENCE]: { roles: ['manager', 123] } } },
+    },
+  ])('returns 401 when $description', async ({ payload }) => {
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+    });
+    const token = await signArbitraryAccessToken(primaryKey, {
+      payload,
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toMatchObject({
+        code: 'INVALID_ACCESS_TOKEN',
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it.each([
+    {
+      description: 'preferred_username is not a string',
+      payload: { preferred_username: 123 },
+    },
+    {
+      description: 'preferred_username is an empty string',
+      payload: { preferred_username: '' },
+    },
+    {
+      description: 'email is not a string',
+      payload: { email: null },
+    },
+    {
+      description: 'email is an empty string',
+      payload: { email: '' },
+    },
+  ])('omits invalid optional identity fields when $description', async ({ payload }) => {
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+    });
+    const token = await signArbitraryAccessToken(primaryKey, {
+      payload: {
+        sub: 'subject-optional-fields',
+        ...payload,
+      },
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json<Record<string, unknown>>();
+      expect(body).not.toHaveProperty('username');
+      expect(body).not.toHaveProperty('email');
+      expect(body.username).toBeUndefined();
+      expect(body.email).toBeUndefined();
+    } finally {
+      await app.close();
+    }
+  });
+
+  it.each([
+    {
+      description: 'sub is absent',
+      payload: { sub: undefined },
+    },
+    {
+      description: 'sub is empty',
+      payload: { sub: '' },
+    },
+    {
+      description: 'sub has the wrong type',
+      payload: { sub: { nested: true } },
+    },
+  ])('returns 401 when $description', async ({ payload }) => {
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+    });
+    const token = await signArbitraryAccessToken(primaryKey, {
+      payload,
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toMatchObject({
+        code: 'INVALID_ACCESS_TOKEN',
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('accepts a token with a numeric iat claim', async () => {
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+    });
+    const token = await signArbitraryAccessToken(primaryKey, {
+      payload: {
+        sub: 'subject-valid-iat',
+        iat: Math.floor(Date.now() / 1000),
+      },
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it.each([
+    {
+      description: 'iat is a string',
+      payload: { iat: 'invalid' },
+    },
+    {
+      description: 'iat is an object',
+      payload: { iat: { issuedAt: 1 } },
+    },
+  ])('returns 401 when $description', async ({ payload }) => {
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+    });
+    const token = await signArbitraryAccessToken(primaryKey, {
+      payload,
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toMatchObject({
+        code: 'INVALID_ACCESS_TOKEN',
       });
     } finally {
       await app.close();
@@ -411,13 +657,39 @@ describe('auth HTTP integration', () => {
     }
   });
 
-  it('rejects not-yet-valid tokens', async () => {
+  it('accepts tokens that are within the configured clock tolerance', async () => {
+    const now = Math.floor(Date.now() / 1000);
     const app = await buildAuthTestApplication({
       jwksUrl: jwksServer.url,
+      oidcClockToleranceSeconds: 5,
     });
-    const now = Math.floor(Date.now() / 1000);
     const token = await signAccessToken(primaryKey, {
-      nbf: now + 120,
+      nbf: now + 2,
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('rejects tokens that exceed the configured clock tolerance', async () => {
+    const now = Math.floor(Date.now() / 1000);
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+      oidcClockToleranceSeconds: 1,
+    });
+    const token = await signAccessToken(primaryKey, {
+      nbf: now + 10,
     });
 
     try {
@@ -456,6 +728,9 @@ describe('auth HTTP integration', () => {
       });
 
       expect(response.statusCode).toBe(401);
+      expect(response.json()).toMatchObject({
+        code: 'INVALID_ACCESS_TOKEN',
+      });
     } finally {
       await app.close();
     }
@@ -481,28 +756,6 @@ describe('auth HTTP integration', () => {
       expect(response.json()).toMatchObject({
         code: 'INVALID_ACCESS_TOKEN',
       });
-    } finally {
-      await app.close();
-    }
-  });
-
-  it('rejects tokens signed with another key', async () => {
-    const app = await buildAuthTestApplication({
-      jwksUrl: jwksServer.url,
-    });
-    const outsiderKey = await generateSigningKeyPair('kid-outsider');
-    const token = await signAccessToken(outsiderKey);
-
-    try {
-      const response = await app.inject({
-        method: 'GET',
-        url: '/api/v1/auth/me',
-        headers: {
-          authorization: `Bearer ${token}`,
-        },
-      });
-
-      expect(response.statusCode).toBe(401);
     } finally {
       await app.close();
     }
@@ -586,7 +839,7 @@ describe('auth HTTP integration', () => {
     }
   });
 
-  it('returns 503 on invalid JWKS JSON payloads', async () => {
+  it('returns 503 on syntactically invalid JWKS JSON payloads', async () => {
     jwksServer.setMode('bad-json');
     const app = await buildAuthTestApplication({
       jwksUrl: jwksServer.url,
@@ -610,6 +863,37 @@ describe('auth HTTP integration', () => {
       await app.close();
     }
   });
+
+  it.each([
+    { description: 'payload is empty object', body: '{}' },
+    { description: 'keys is not an array', body: '{"keys":"invalid"}' },
+  ])(
+    'returns 503 when the JWKS response is structurally invalid because $description',
+    async ({ body }) => {
+      jwksServer.setRawBody(body);
+      const app = await buildAuthTestApplication({
+        jwksUrl: jwksServer.url,
+      });
+      const token = await signAccessToken(primaryKey);
+
+      try {
+        const response = await app.inject({
+          method: 'GET',
+          url: '/api/v1/auth/me',
+          headers: {
+            authorization: `Bearer ${token}`,
+          },
+        });
+
+        expect(response.statusCode).toBe(503);
+        expect(response.json()).toMatchObject({
+          code: 'IDENTITY_PROVIDER_UNAVAILABLE',
+        });
+      } finally {
+        await app.close();
+      }
+    },
+  );
 
   it('supports key rotation without restarting the API', async () => {
     const app = await buildAuthTestApplication({
@@ -652,13 +936,166 @@ describe('auth HTTP integration', () => {
     }
   });
 
-  it('does not log the bearer token or raw claims', async () => {
+  it('continues accepting cached keys when JWKS becomes unavailable but rejects new kids with 503', async () => {
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+      jwksTimeoutMs: 50,
+    });
+    const cachedToken = await signAccessToken(primaryKey);
+    const rotatedToken = await signAccessToken(secondaryKey);
+
+    try {
+      const firstResponse = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${cachedToken}`,
+        },
+      });
+
+      expect(firstResponse.statusCode).toBe(200);
+
+      jwksServer.setMode('hang');
+
+      const cachedResponse = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${cachedToken}`,
+        },
+      });
+
+      expect(cachedResponse.statusCode).toBe(200);
+
+      const rotatedResponse = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${rotatedToken}`,
+        },
+      });
+
+      expect(rotatedResponse.statusCode).toBe(503);
+      expect(rotatedResponse.json()).toMatchObject({
+        code: 'IDENTITY_PROVIDER_UNAVAILABLE',
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('returns coherent 503 responses for concurrent unknown-kid requests when JWKS is unavailable', async () => {
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+      jwksTimeoutMs: 50,
+    });
+    const cachedToken = await signAccessToken(primaryKey);
+    const unknownKidToken = await signAccessToken(secondaryKey);
+
+    try {
+      const firstResponse = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${cachedToken}`,
+        },
+      });
+
+      expect(firstResponse.statusCode).toBe(200);
+      jwksServer.setMode('hang');
+
+      const responses = await Promise.all([
+        app.inject({
+          method: 'GET',
+          url: '/api/v1/auth/me',
+          headers: {
+            authorization: `Bearer ${unknownKidToken}`,
+          },
+        }),
+        app.inject({
+          method: 'GET',
+          url: '/api/v1/auth/me',
+          headers: {
+            authorization: `Bearer ${unknownKidToken}`,
+          },
+        }),
+      ]);
+
+      expect(responses.map((response) => response.statusCode)).toEqual([503, 503]);
+      expect(responses.map((response) => response.json<ProblemDetailsResponse>().code)).toEqual([
+        'IDENTITY_PROVIDER_UNAVAILABLE',
+        'IDENTITY_PROVIDER_UNAVAILABLE',
+      ]);
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('returns 500 for unexpected verifier defects instead of coercing them to 503', async () => {
+    const logLines: string[] = [];
+    const token = await signAccessToken(primaryKey, {
+      sub: 'subject-unexpected-error',
+      preferred_username: 'unexpected.user',
+      email: 'unexpected@example.test',
+      resource_access: {
+        [TEST_AUDIENCE]: {
+          roles: ['manager', 'barber'],
+        },
+      },
+    });
+    const app = await buildAuthTestApplication({
+      jwksUrl: jwksServer.url,
+      logLines,
+      verifyAccessToken: () => {
+        throw new Error('simulated verifier defect');
+      },
+    });
+
+    try {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/me',
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.json()).toMatchObject({
+        code: 'INTERNAL_ERROR',
+      });
+      expect(response.body).not.toContain('simulated verifier defect');
+      expect(response.body).not.toContain(token);
+
+      const joinedLogs = logLines.join('\n');
+      expect(joinedLogs).toContain('request_failed');
+      expect(joinedLogs).toContain('simulated verifier defect');
+      expect(joinedLogs).not.toContain(token);
+      expect(joinedLogs).not.toContain('subject-unexpected-error');
+      expect(joinedLogs).not.toContain('unexpected.user');
+      expect(joinedLogs).not.toContain('unexpected@example.test');
+      expect(joinedLogs).not.toContain('"roles":["manager","barber"]');
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('does not log the bearer token, JWT claims, or JWKS material for authentication failures', async () => {
     const logLines: string[] = [];
     const app = await buildAuthTestApplication({
       jwksUrl: jwksServer.url,
       logLines,
     });
-    const token = await signAccessToken(primaryKey);
+    const token = await signAccessToken(primaryKey, {
+      sub: 'subject-sensitive',
+      preferred_username: 'sensitive.user',
+      email: 'sensitive@example.test',
+      resource_access: {
+        [TEST_AUDIENCE]: {
+          roles: ['manager', 'barber'],
+        },
+      },
+    });
 
     try {
       await app.inject({
@@ -670,9 +1107,18 @@ describe('auth HTTP integration', () => {
       });
 
       const joinedLogs = logLines.join('\n');
+      expect(joinedLogs).toContain('authentication_failed');
       expect(joinedLogs).not.toContain(token);
+      expect(joinedLogs).not.toContain('authorization');
       expect(joinedLogs).not.toContain('resource_access');
       expect(joinedLogs).not.toContain('preferred_username');
+      expect(joinedLogs).not.toContain('email');
+      expect(joinedLogs).not.toContain('subject-sensitive');
+      expect(joinedLogs).not.toContain('sensitive.user');
+      expect(joinedLogs).not.toContain('sensitive@example.test');
+      expect(joinedLogs).not.toContain('"roles":["manager","barber"]');
+      expect(joinedLogs).not.toContain('"keys"');
+      expect(joinedLogs).not.toContain('"kty"');
     } finally {
       await app.close();
     }

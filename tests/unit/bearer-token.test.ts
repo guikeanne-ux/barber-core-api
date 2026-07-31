@@ -37,4 +37,14 @@ describe('parseBearerToken', () => {
       /access token is invalid/i,
     );
   });
+
+  it('accepts a token exactly at the maximum token length', () => {
+    expect(parseBearerToken(`Bearer ${'a'.repeat(8192)}`)).toBe('a'.repeat(8192));
+  });
+
+  it('rejects a token one character above the maximum token length', () => {
+    expect(() => parseBearerToken(`Bearer ${'a'.repeat(8193)}`)).toThrow(
+      /access token is invalid/i,
+    );
+  });
 });

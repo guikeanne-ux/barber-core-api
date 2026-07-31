@@ -17,6 +17,18 @@ import {
 } from './authentication-errors.js';
 
 const ALLOWED_ALGORITHMS = ['RS256'] as const;
+const KNOWN_NETWORK_ERROR_CODES = new Set([
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  'ENOTFOUND',
+  'EPIPE',
+  'ETIMEDOUT',
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_HEADERS_TIMEOUT',
+  'UND_ERR_SOCKET',
+]);
 
 export type VerifyAccessToken = (token: string) => Promise<AuthenticatedPrincipal>;
 
@@ -24,6 +36,94 @@ export interface AccessTokenVerifierOptions {
   readonly cooldownDurationMs?: number;
   readonly cacheMaxAgeMs?: number;
   readonly fetchImplementation?: FetchImplementation;
+}
+
+type JwksOperationalFailureCategory = 'timeout' | 'network' | 'http' | 'invalid-response';
+
+class IdentityProviderUnavailableError extends Error {
+  readonly category: JwksOperationalFailureCategory;
+
+  constructor(category: JwksOperationalFailureCategory, cause?: unknown) {
+    super('The identity provider is temporarily unavailable.', cause ? { cause } : undefined);
+    this.name = 'IdentityProviderUnavailableError';
+    this.category = category;
+  }
+}
+
+function readErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null || !('code' in error)) {
+    return undefined;
+  }
+
+  const { code } = error as { code?: unknown };
+  return typeof code === 'string' ? code : undefined;
+}
+
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException
+    ? error.name === 'AbortError'
+    : typeof error === 'object' &&
+        error !== null &&
+        'name' in error &&
+        (error as { name?: unknown }).name === 'AbortError';
+}
+
+function isKnownNetworkError(error: unknown): boolean {
+  const errorCode = readErrorCode(error);
+  if (errorCode && KNOWN_NETWORK_ERROR_CODES.has(errorCode)) {
+    return true;
+  }
+
+  if (typeof error !== 'object' || error === null || !('cause' in error)) {
+    return false;
+  }
+
+  return isKnownNetworkError((error as { cause?: unknown }).cause);
+}
+
+function createJwksFetch(
+  fetchImplementation: FetchImplementation = globalThis.fetch,
+): FetchImplementation {
+  return async (url, init) => {
+    let response: Response;
+
+    try {
+      response = await fetchImplementation(url, init);
+    } catch (error) {
+      if (isAbortError(error) || init.signal.aborted) {
+        throw new IdentityProviderUnavailableError('timeout', error);
+      }
+
+      if (isKnownNetworkError(error)) {
+        throw new IdentityProviderUnavailableError('network', error);
+      }
+
+      throw error;
+    }
+
+    if (!response.ok) {
+      throw new IdentityProviderUnavailableError('http');
+    }
+
+    let parsed: unknown;
+
+    try {
+      parsed = await response.clone().json();
+    } catch (error) {
+      throw new IdentityProviderUnavailableError('invalid-response', error);
+    }
+
+    if (
+      typeof parsed !== 'object' ||
+      parsed === null ||
+      !('keys' in parsed) ||
+      !Array.isArray((parsed as { keys?: unknown }).keys)
+    ) {
+      throw new IdentityProviderUnavailableError('invalid-response');
+    }
+
+    return response;
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -97,13 +197,29 @@ function mapPayloadToPrincipal(payload: JWTPayload, audience: string): Authentic
   return principal;
 }
 
-function mapJoseError(error: unknown): AuthenticationProblem {
+function toAuthenticationProblemOrThrow(error: unknown): AuthenticationProblem {
   if (error instanceof AuthenticationProblem) {
     return error;
   }
 
+  if (error instanceof IdentityProviderUnavailableError) {
+    if (error.category === 'timeout') {
+      return identityProviderUnavailable('jwks_timeout', error);
+    }
+
+    if (error.category === 'network') {
+      return identityProviderUnavailable('jwks_unavailable', error);
+    }
+
+    return identityProviderUnavailable('jwks_invalid_response', error);
+  }
+
   if (error instanceof errors.JWKSTimeout) {
     return identityProviderUnavailable('jwks_timeout', error);
+  }
+
+  if (error instanceof errors.JWKSMultipleMatchingKeys || error instanceof errors.JWKSInvalid) {
+    return identityProviderUnavailable('jwks_invalid_response', error);
   }
 
   if (error instanceof errors.JWKSNoMatchingKey) {
@@ -132,6 +248,7 @@ function mapJoseError(error: unknown): AuthenticationProblem {
 
   if (
     error instanceof errors.JOSEAlgNotAllowed ||
+    error instanceof errors.JOSENotSupported ||
     error instanceof errors.JWSInvalid ||
     error instanceof errors.JWSSignatureVerificationFailed ||
     error instanceof errors.JWTInvalid ||
@@ -140,26 +257,7 @@ function mapJoseError(error: unknown): AuthenticationProblem {
     return invalidAccessToken('invalid_token', error);
   }
 
-  if (error instanceof errors.JWKSInvalid) {
-    return identityProviderUnavailable('jwks_invalid_response', error);
-  }
-
-  if (error instanceof errors.JOSEError) {
-    if (
-      error.message.includes('Expected 200 OK from the JSON Web Key Set HTTP response') ||
-      error.message.includes('Failed to parse the JSON Web Key Set HTTP response as JSON')
-    ) {
-      return identityProviderUnavailable('jwks_invalid_response', error);
-    }
-
-    return invalidAccessToken('invalid_token', error);
-  }
-
-  if (error instanceof TypeError) {
-    return identityProviderUnavailable('jwks_unavailable', error);
-  }
-
-  return identityProviderUnavailable('jwks_unavailable', error);
+  throw error;
 }
 
 export function createVerifyAccessToken(
@@ -179,9 +277,7 @@ export function createVerifyAccessToken(
       ? { cooldownDuration: options.cooldownDurationMs }
       : {}),
     ...(options.cacheMaxAgeMs !== undefined ? { cacheMaxAge: options.cacheMaxAgeMs } : {}),
-    ...(options.fetchImplementation !== undefined
-      ? { [customFetch]: options.fetchImplementation }
-      : {}),
+    [customFetch]: createJwksFetch(options.fetchImplementation),
   });
 
   return async (token) => {
@@ -195,7 +291,7 @@ export function createVerifyAccessToken(
 
       return mapPayloadToPrincipal(payload, configuration.OIDC_AUDIENCE);
     } catch (error) {
-      throw mapJoseError(error);
+      throw toAuthenticationProblemOrThrow(error);
     }
   };
 }

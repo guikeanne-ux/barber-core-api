@@ -175,7 +175,12 @@ export async function registerCorePlugins(
     request.log.error(
       {
         requestId: request.id,
-        error,
+        ...(error instanceof Error
+          ? {
+              errorName: error.name,
+              errorMessage: error.message,
+            }
+          : {}),
       },
       'request_failed',
     );

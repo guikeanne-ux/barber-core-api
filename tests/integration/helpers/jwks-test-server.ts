@@ -1,11 +1,19 @@
 import http from 'node:http';
+import { TextEncoder } from 'node:util';
 
-import { SignJWT, exportJWK, generateKeyPair, type JSONWebKeySet, type JWK } from 'jose';
+import {
+  CompactSign,
+  SignJWT,
+  exportJWK,
+  generateKeyPair,
+  type JSONWebKeySet,
+  type JWK,
+} from 'jose';
 
 export const TEST_ISSUER = 'http://issuer.test/realms/barber';
 export const TEST_AUDIENCE = 'barber-core-api';
 
-type JwksMode = 'jwks' | 'bad-json' | 'bad-status' | 'hang';
+type JwksMode = 'jwks' | 'bad-json' | 'bad-status' | 'hang' | 'raw-body';
 
 export interface SigningKeyPair {
   readonly kid: string;
@@ -23,6 +31,13 @@ export interface TokenPayloadInput {
   readonly iat?: number;
   readonly exp?: number;
   readonly iss?: string;
+}
+
+export interface ArbitraryTokenInput {
+  readonly payload: Record<string, unknown>;
+  readonly issuer?: string;
+  readonly audience?: string | readonly string[];
+  readonly protectedHeader?: Record<string, unknown>;
 }
 
 export async function generateSigningKeyPair(kid: string): Promise<SigningKeyPair> {
@@ -81,10 +96,35 @@ export async function signAccessToken(
   return jwt.sign(keyPair.privateKey);
 }
 
+export async function signArbitraryAccessToken(
+  keyPair: SigningKeyPair,
+  input: ArbitraryTokenInput,
+): Promise<string> {
+  const encoder = new TextEncoder();
+  const payload = {
+    iss: input.issuer ?? TEST_ISSUER,
+    aud: input.audience ?? TEST_AUDIENCE,
+    exp: Math.floor(Date.now() / 1000) + 300,
+    ...input.payload,
+  };
+
+  return new CompactSign(encoder.encode(JSON.stringify(payload)))
+    .setProtectedHeader({
+      alg: 'RS256',
+      kid: keyPair.kid,
+      ...(input.protectedHeader ?? {}),
+    })
+    .sign(keyPair.privateKey);
+}
+
 export class JwksTestServer {
   #jwks: JSONWebKeySet = { keys: [] };
 
   #mode: JwksMode = 'jwks';
+
+  #rawBody = '{}';
+
+  #rawContentType = 'application/json';
 
   #server = http.createServer((_, response) => {
     switch (this.#mode) {
@@ -97,6 +137,10 @@ export class JwksTestServer {
         response.end(JSON.stringify({ error: 'boom' }));
         return;
       case 'hang':
+        return;
+      case 'raw-body':
+        response.writeHead(200, { 'content-type': this.#rawContentType });
+        response.end(this.#rawBody);
         return;
       case 'jwks':
       default:
@@ -131,6 +175,12 @@ export class JwksTestServer {
 
   setMode(mode: JwksMode): void {
     this.#mode = mode;
+  }
+
+  setRawBody(body: string, contentType = 'application/json'): void {
+    this.#rawBody = body;
+    this.#rawContentType = contentType;
+    this.#mode = 'raw-body';
   }
 
   setKeys(keys: readonly JWK[]): void {
