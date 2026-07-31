@@ -23,3 +23,12 @@ Sensitive fields are redacted, including:
 - token
 - secret
 - client secret
+
+## Shutdown logs
+
+Graceful shutdown logs:
+
+- received signal
+- successful completion
+- failure
+- timeout before forced non-zero exit

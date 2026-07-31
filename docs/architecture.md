@@ -21,6 +21,8 @@ The application is separated into:
 
 The design allows tests to build the Fastify instance with `fastify.inject` without opening a TCP port.
 
+Each module receives explicitly only its own dependencies. There is no global service locator and modules do not access a general application container.
+
 ## Modular monolith rules
 
 Future modules must:

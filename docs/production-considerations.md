@@ -10,3 +10,6 @@ Future production work should address:
 - stronger image provenance controls such as digest pinning
 - production monitoring and alerting
 - deployment topology
+- reevaluation of the Fastify request logging deprecation path for version `6`
+
+Current lifecycle behavior already includes a configurable graceful shutdown timeout through `SHUTDOWN_TIMEOUT_MS`.

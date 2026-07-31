@@ -13,6 +13,11 @@ cp .env.example .env
 npm ci
 ```
 
+Key local variables:
+
+- `CORS_ORIGIN=http://localhost:5173`
+- `SHUTDOWN_TIMEOUT_MS=10000`
+
 ## Run locally
 
 ```bash
@@ -25,6 +30,14 @@ npm run dev
 npm run docker:up
 npm run smoke
 ```
+
+## Technical endpoints
+
+- `GET /health`
+- `GET /health/live`
+- `GET /health/ready`
+- `GET /docs`
+- `GET /docs/json`
 
 ## Reset the Docker environment
 
