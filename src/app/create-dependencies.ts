@@ -9,7 +9,9 @@ export function createDependencies(
   configuration: Readonly<ApplicationConfiguration>,
 ): ApplicationDependencies {
   const database = createDatabaseConnection(configuration.DATABASE_URL);
-  const verifyAccessToken = createVerifyAccessToken(configuration);
+  const verifyAccessToken = createVerifyAccessToken(configuration, {
+    cooldownDurationMs: 0,
+  });
   const catalogRepository = createPostgresCatalogRepository(database);
   const catalogService = createCatalogService(catalogRepository);
 
