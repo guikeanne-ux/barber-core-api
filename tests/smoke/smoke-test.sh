@@ -56,6 +56,40 @@ barber_token="$(
     | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (!json.accessToken) process.exit(1); process.stdout.write(json.accessToken); })"
 )"
 
+wait_for_authenticated_request() {
+  local name="$1"
+  local token="$2"
+  local output_file="$3"
+
+  for _ in $(seq 1 30); do
+    local status
+    status="$(
+      curl -sS -o "${output_file}" -w '%{http_code}' \
+        "${BASE_URL}/api/v1/auth/me" \
+        -H "Authorization: Bearer ${token}"
+    )"
+
+    if [[ "${status}" == "200" ]]; then
+      echo "${name} authenticated request is ready: ${BASE_URL}/api/v1/auth/me"
+      return 0
+    fi
+
+    if [[ "${status}" != "503" ]]; then
+      echo "Expected ${name} authenticated probe to return 200 or transient 503, got ${status}" >&2
+      cat "${output_file}" >&2 || true
+      return 1
+    fi
+
+    sleep 1
+  done
+
+  echo "Timed out waiting for ${name} authenticated request readiness" >&2
+  cat "${output_file}" >&2 || true
+  return 1
+}
+
+wait_for_authenticated_request "Admin" "${admin_token}" /tmp/barber-core-api-authenticated-probe.json
+
 professional_status="$(
   curl -sS -o /tmp/barber-core-api-professional.json -w '%{http_code}' \
     -X POST "${BASE_URL}/api/v1/professionals" \
@@ -65,6 +99,7 @@ professional_status="$(
 )"
 if [[ "$professional_status" != "201" ]]; then
   echo "Expected authenticated professional creation to return 201, got ${professional_status}" >&2
+  cat /tmp/barber-core-api-professional.json >&2 || true
   exit 1
 fi
 
@@ -77,6 +112,7 @@ service_status="$(
 )"
 if [[ "$service_status" != "201" ]]; then
   echo "Expected authenticated service creation to return 201, got ${service_status}" >&2
+  cat /tmp/barber-core-api-service.json >&2 || true
   exit 1
 fi
 
@@ -100,6 +136,7 @@ list_status="$(
 )"
 if [[ "$list_status" != "200" ]]; then
   echo "Expected nested service list to return 200, got ${list_status}" >&2
+  cat /tmp/barber-core-api-list.json >&2 || true
   exit 1
 fi
 node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-list.json', 'utf8')); if (json.totalItems !== 1) process.exit(1); if (json.items?.[0]?.id !== process.argv[1]) process.exit(1);" "${service_id}"
@@ -113,6 +150,7 @@ forbidden_status="$(
 )"
 if [[ "$forbidden_status" != "403" ]]; then
   echo "Expected barber write denial to return 403, got ${forbidden_status}" >&2
+  cat /tmp/barber-core-api-forbidden.json >&2 || true
   exit 1
 fi
 node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-forbidden.json', 'utf8')); if (json.code !== 'INSUFFICIENT_PERMISSIONS') process.exit(1);"
