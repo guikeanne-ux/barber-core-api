@@ -1,12 +1,13 @@
 # Migrations
 
-This directory intentionally contains no production migration yet.
+This directory contains the current production migrations for the API.
 
-The first production migration will be added together with the first persistent business module.
+The first business migration creates the `professionals`, `services`, and `professional_services` tables owned by the `catalog` module.
 
-Even without production migrations, the repository must still implement and validate the real Kysely migration mechanism. Integration tests use disposable migration fixtures against PostgreSQL started by Testcontainers to prove:
+Integration tests still validate the real Kysely migration mechanism against disposable PostgreSQL instances from Testcontainers, including:
 
 - migration `up`
 - rollback
 - deterministic order
 - migrator metadata persistence
+- production catalog schema constraints and indexes

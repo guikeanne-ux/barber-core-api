@@ -1,6 +1,6 @@
 # barber-core-api
 
-`barber-core-api` is the main HTTP API of the Barber Platform ecosystem. This repository currently implements the technical foundation plus identity integration and route-level authorization, without business modules or messaging.
+`barber-core-api` is the main HTTP API of the Barber Platform ecosystem. This repository currently implements the technical foundation, identity integration, route-level authorization, and the first business module: `catalog`.
 
 ## Scope
 
@@ -11,12 +11,13 @@ This repository currently covers only:
 - technical HTTP endpoints
 - local JWT validation through Keycloak JWKS
 - explicit route-level authentication and authorization helpers
+- catalog management for professionals, services, and professional-service capabilities
 - error, logging, and lifecycle conventions
 - Docker and CI execution
 
 Deliberately out of scope for now:
 
-- business CRUDs and scheduling flows
+- availability and scheduling flows
 - messaging, outbox, RabbitMQ, notifications, or workers
 
 ## What it already provides
@@ -32,6 +33,8 @@ Deliberately out of scope for now:
 - local access-token validation with `jose` and remote JWKS
 - sanitized authenticated principal at `GET /api/v1/auth/me`
 - role-based authorization with `admin`, `manager`, `barber`, and `receptionist`
+- authenticated catalog endpoints for professionals and services
+- authenticated capability management between professionals and services
 - OpenAPI generation and Swagger UI
 - unit, integration, and Docker smoke tests
 - Docker and GitHub Actions pipeline
@@ -53,10 +56,11 @@ The composition root stays explicit in `buildApplication()` and `startServer()`.
 
 There is no global service locator. Each module receives only the dependencies it needs.
 
-Current technical module:
+Current modules:
 
 - `system`
 - `auth`
+- `catalog`
 
 ## Health endpoints
 
@@ -91,7 +95,7 @@ npm start
 
 ## Migrations
 
-This delivery intentionally contains no production migration yet, but the real migration mechanism is already implemented.
+The repository now contains the first production migration for the `catalog` module.
 
 Useful commands:
 
@@ -141,6 +145,8 @@ The contract now includes:
 
 - `bearerAuth` security scheme
 - `GET /api/v1/auth/me`
+- `Professionals` and `Services` tags
+- protected catalog operations with stable `operationId` values
 - standardized `401`, `403`, and `503` Problem Details for protected routes
 
 ## Graceful shutdown

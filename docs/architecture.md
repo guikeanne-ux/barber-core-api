@@ -2,12 +2,13 @@
 
 ## Current scope
 
-This repository currently implements the API foundation plus identity integration at the HTTP boundary. There are still no business modules yet.
+This repository currently implements the API foundation, identity integration at the HTTP boundary, and the first business module of the demonstrative vertical slice.
 
-Current technical modules:
+Current modules:
 
 - `system`
 - `auth`
+- `catalog`
 
 ## Composition
 
@@ -37,6 +38,20 @@ The `auth` module owns:
 
 The module does not own login flows, sessions, refresh tokens, Keycloak administration, or business authorization rules beyond the current route-level client-role checks.
 
+## Catalog module
+
+The `catalog` module owns:
+
+- professionals
+- services
+- professional-service capabilities
+- HTTP contracts for those resources
+- validation and normalization rules
+- the `CatalogRepository` persistence boundary
+- the PostgreSQL adapter for catalog storage
+
+Handlers do not talk to Kysely directly. The module stays cohesive on purpose, instead of being split into speculative submodules per entity.
+
 ## Modular monolith rules
 
 Future modules must:
@@ -44,3 +59,4 @@ Future modules must:
 - keep their internal persistence private
 - avoid direct imports of other modules' internal implementations
 - expose only explicit contracts when cross-module collaboration becomes necessary
+- avoid querying `professionals`, `services`, or `professional_services` directly outside `catalog`

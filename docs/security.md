@@ -12,6 +12,7 @@ The current delivery secures the HTTP boundary with:
 - exact issuer and audience validation
 - explicit algorithm allowlist
 - no client secret in the API for user-token validation
+- authenticated catalog routes with explicit read and write role checks
 
 ## Frontend origin
 
@@ -56,3 +57,9 @@ Relevant variables:
 - `OIDC_JWKS_TIMEOUT_MS`
 
 `NODE_ENV=production` requires HTTPS for issuer and JWKS URLs. Local development remains explicitly non-production while the local Keycloak environment runs over HTTP.
+
+## Current role matrix
+
+- `admin` and `manager` can read and write catalog routes
+- `barber` and `receptionist` can read catalog routes
+- write attempts by `barber` or `receptionist` return `403`

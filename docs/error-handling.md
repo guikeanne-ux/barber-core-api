@@ -36,6 +36,9 @@ Current public codes:
 - `INVALID_ACCESS_TOKEN`
 - `INSUFFICIENT_PERMISSIONS`
 - `IDENTITY_PROVIDER_UNAVAILABLE`
+- `VALIDATION_ERROR`
+- `PROFESSIONAL_NOT_FOUND`
+- `SERVICE_NOT_FOUND`
 
 `401` responses include:
 
@@ -50,3 +53,9 @@ Authentication verification failures are classified as:
 - `401` for missing credentials, malformed bearer tokens, invalid signatures, invalid claims, and tokens without a matching key after a valid JWKS lookup
 - `503` for known identity-provider operational failures such as timeout, unreachable JWKS endpoint, HTTP error responses, and invalid JWKS payloads
 - `500` for unexpected internal defects outside the known authentication failure categories
+
+Catalog routes keep domain-specific classification narrow:
+
+- `400` only for explicit validation failures
+- `404` only for missing professionals or services
+- `500` for unexpected persistence or application defects

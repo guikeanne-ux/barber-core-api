@@ -38,12 +38,18 @@ npm run docker:up
 npm run smoke
 ```
 
+The Docker smoke flow starts an ephemeral JWKS fixture on the host during `npm run smoke`. It does not require a real Keycloak container, does not version private keys, and validates authenticated catalog operations against the running API container.
+
 ## Technical endpoints
 
 - `GET /health`
 - `GET /health/live`
 - `GET /health/ready`
 - `GET /api/v1/auth/me`
+- `POST /api/v1/professionals`
+- `GET /api/v1/professionals`
+- `POST /api/v1/services`
+- `GET /api/v1/services`
 - `GET /docs`
 - `GET /docs/json`
 

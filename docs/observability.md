@@ -36,6 +36,13 @@ Authentication logs also avoid recording:
 - full role arrays
 - JWKS material
 
+Catalog request logs should also avoid recording:
+
+- professional names
+- full `bio`
+- full `description`
+- service prices
+
 ## Auth result categories
 
 Protected-route failures are logged with sanitized categories such as:
