@@ -39,6 +39,11 @@ describe('http error handling integration', () => {
     const instance = fastify({
       logger: false,
       bodyLimit: 32,
+      ajv: {
+        customOptions: {
+          coerceTypes: false,
+        },
+      },
       disableRequestLogging: true,
       requestIdHeader: false,
       genReqId: () => randomUUID(),

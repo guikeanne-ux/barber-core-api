@@ -4,6 +4,7 @@ import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import type { BuiltApplication, ApplicationDependencies } from './application-types.js';
 import { registerCorePlugins } from './plugins/register-plugins.js';
 import { authRoutes } from '../modules/auth/routes.js';
+import { registerCatalogModule } from '../modules/catalog/register-catalog-module.js';
 import { resolveRequestId } from '../shared/http/request-id.js';
 import { systemRoutes } from '../modules/system/system-routes.js';
 
@@ -31,6 +32,11 @@ export async function buildApplication(
   const app = fastify({
     logger: buildLoggerOptions(dependencies.configuration),
     bodyLimit: 1_048_576,
+    ajv: {
+      customOptions: {
+        coerceTypes: false,
+      },
+    },
     disableRequestLogging: true,
     requestIdHeader: false,
     genReqId: (request) => {
@@ -46,6 +52,10 @@ export async function buildApplication(
   });
   await app.register(authRoutes, {
     verifyAccessToken: dependencies.verifyAccessToken,
+  });
+  await app.register(registerCatalogModule, {
+    verifyAccessToken: dependencies.verifyAccessToken,
+    catalogService: dependencies.catalogService,
   });
   await app.register(systemRoutes, {
     configuration: dependencies.configuration,

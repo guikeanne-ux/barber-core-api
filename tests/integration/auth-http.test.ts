@@ -43,6 +43,11 @@ async function buildAuthTestApplication(input: {
           },
         }
       : false,
+    ajv: {
+      customOptions: {
+        coerceTypes: false,
+      },
+    },
     disableRequestLogging: true,
     requestIdHeader: false,
     genReqId: () => randomUUID(),

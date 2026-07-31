@@ -7,6 +7,7 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 
 import type { ApplicationConfiguration } from '../configuration/configuration-schema.js';
 import { AuthenticationProblem } from '../../modules/auth/authentication-errors.js';
+import { CatalogProblem } from '../../modules/catalog/catalog-errors.js';
 import {
   createProblemDetails,
   type ProblemFieldError,
@@ -168,6 +169,22 @@ export async function registerCorePlugins(
             status: error.statusCode,
             detail: error.detail,
             code: error.code,
+          }),
+        );
+    }
+
+    if (error instanceof CatalogProblem) {
+      return reply
+        .code(error.statusCode)
+        .type('application/problem+json')
+        .send(
+          createProblemDetails(request, {
+            type: error.type,
+            title: error.statusCode === 404 ? 'Not Found' : 'Invalid Request',
+            status: error.statusCode,
+            detail: error.detail,
+            code: error.code,
+            ...(error.errors ? { errors: [...error.errors] } : {}),
           }),
         );
     }
