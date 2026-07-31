@@ -10,7 +10,6 @@ export function createDependencies(
   return {
     configuration,
     database,
-    readinessTimeoutMs: 1_000,
     readinessProbe: () => checkDatabaseReadiness(database, 1_000),
   };
 }

@@ -5,6 +5,7 @@ import fastifyHelmet from '@fastify/helmet';
 import fastifySwagger from '@fastify/swagger';
 import fastifySwaggerUi from '@fastify/swagger-ui';
 
+import type { ApplicationConfiguration } from '../configuration/configuration-schema.js';
 import {
   createProblemDetails,
   type ProblemFieldError,
@@ -20,9 +21,19 @@ function toValidationErrors(
   }));
 }
 
-export async function registerCorePlugins(app: FastifyInstance): Promise<void> {
+export interface CorePluginOptions {
+  readonly configuration: Pick<
+    ApplicationConfiguration,
+    'APP_VERSION' | 'CORS_ORIGIN' | 'NODE_ENV'
+  >;
+}
+
+export async function registerCorePlugins(
+  app: FastifyInstance,
+  options: Readonly<CorePluginOptions>,
+): Promise<void> {
   await app.register(fastifyCors, {
-    origin: app.di.configuration.CORS_ORIGIN,
+    origin: options.configuration.CORS_ORIGIN,
   });
 
   await app.register(fastifyHelmet, {
@@ -34,7 +45,7 @@ export async function registerCorePlugins(app: FastifyInstance): Promise<void> {
       openapi: '3.1.0',
       info: {
         title: 'Barber Core API',
-        version: app.di.configuration.APP_VERSION,
+        version: options.configuration.APP_VERSION,
         description: 'Technical foundation of the Barber Platform core API.',
       },
       servers: [
@@ -71,8 +82,8 @@ export async function registerCorePlugins(app: FastifyInstance): Promise<void> {
         requestId: request.id,
         method: request.method,
         route: request.url,
-        appVersion: app.di.configuration.APP_VERSION,
-        environment: app.di.configuration.NODE_ENV,
+        appVersion: options.configuration.APP_VERSION,
+        environment: options.configuration.NODE_ENV,
       },
       'request_started',
     );
@@ -87,8 +98,8 @@ export async function registerCorePlugins(app: FastifyInstance): Promise<void> {
         route: request.url,
         statusCode: reply.statusCode,
         durationMs,
-        appVersion: app.di.configuration.APP_VERSION,
-        environment: app.di.configuration.NODE_ENV,
+        appVersion: options.configuration.APP_VERSION,
+        environment: options.configuration.NODE_ENV,
       },
       'request_completed',
     );

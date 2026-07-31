@@ -15,6 +15,7 @@ describe('loadConfiguration', () => {
     });
 
     expect(configuration.PORT).toBe(3333);
+    expect(configuration.SHUTDOWN_TIMEOUT_MS).toBe(10_000);
     expect(Object.isFrozen(configuration)).toBe(true);
   });
 
@@ -44,5 +45,20 @@ describe('loadConfiguration', () => {
         APP_VERSION: '0.1.0',
       }),
     ).toThrow(/Invalid application configuration/);
+  });
+
+  it('loads a custom shutdown timeout', () => {
+    const configuration = loadConfiguration({
+      NODE_ENV: 'test',
+      HOST: '127.0.0.1',
+      PORT: '3333',
+      LOG_LEVEL: 'info',
+      DATABASE_URL: 'postgresql://user:pass@localhost:5432/db',
+      CORS_ORIGIN: 'http://localhost:5173',
+      APP_VERSION: '0.1.0',
+      SHUTDOWN_TIMEOUT_MS: '2500',
+    });
+
+    expect(configuration.SHUTDOWN_TIMEOUT_MS).toBe(2500);
   });
 });

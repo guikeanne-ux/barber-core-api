@@ -6,12 +6,6 @@ import { registerCorePlugins } from './plugins/register-plugins.js';
 import { resolveRequestId } from '../shared/http/request-id.js';
 import { systemRoutes } from '../modules/system/system-routes.js';
 
-declare module 'fastify' {
-  interface FastifyInstance {
-    di: ApplicationDependencies;
-  }
-}
-
 function buildLoggerOptions(configuration: ApplicationDependencies['configuration']) {
   return {
     level: configuration.LOG_LEVEL,
@@ -46,10 +40,13 @@ export async function buildApplication(
     },
   }).withTypeProvider<TypeBoxTypeProvider>();
 
-  app.decorate('di', dependencies);
-
-  await registerCorePlugins(app);
-  await app.register(systemRoutes);
+  await registerCorePlugins(app, {
+    configuration: dependencies.configuration,
+  });
+  await app.register(systemRoutes, {
+    configuration: dependencies.configuration,
+    readinessProbe: dependencies.readinessProbe,
+  });
   await app.ready();
 
   return {

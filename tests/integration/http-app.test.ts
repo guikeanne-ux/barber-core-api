@@ -39,6 +39,7 @@ describe('http application integration', () => {
         DATABASE_URL: started.databaseUrl,
         CORS_ORIGIN: 'http://localhost:5173',
         APP_VERSION: '0.1.0',
+        SHUTDOWN_TIMEOUT_MS: 10_000,
       }),
     );
   });
@@ -214,6 +215,7 @@ describe('http application integration', () => {
         DATABASE_URL: getApplication().dependencies.configuration.DATABASE_URL,
         CORS_ORIGIN: 'http://localhost:5173',
         APP_VERSION: '0.1.0',
+        SHUTDOWN_TIMEOUT_MS: 10_000,
       }),
     );
     const destroySpy = vi.spyOn(app.dependencies.database.db, 'destroy');

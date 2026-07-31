@@ -5,8 +5,6 @@ import { Type } from '@sinclair/typebox';
 import type { TypeBoxTypeProvider } from '@fastify/type-provider-typebox';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import type { ApplicationDependencies } from '../../src/app/application-types.js';
-import '../../src/app/build-application.js';
 import { registerCorePlugins } from '../../src/app/plugins/register-plugins.js';
 
 interface ProblemDetailsResponse {
@@ -22,22 +20,15 @@ describe('http error handling integration', () => {
   let app: FastifyInstance;
 
   beforeAll(async () => {
-    const dependencies: ApplicationDependencies = {
-      configuration: {
-        NODE_ENV: 'test',
-        HOST: '127.0.0.1',
-        PORT: 3000,
-        LOG_LEVEL: 'silent',
-        DATABASE_URL: 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
-        CORS_ORIGIN: 'http://localhost:5173',
-        APP_VERSION: '0.1.0',
-      },
-      database: {
-        db: {} as never,
-        pool: {} as never,
-      },
-      readinessTimeoutMs: 1_000,
-      readinessProbe: () => Promise.resolve({ ready: true as const }),
+    const configuration = {
+      NODE_ENV: 'test' as const,
+      HOST: '127.0.0.1',
+      PORT: 3000,
+      LOG_LEVEL: 'silent' as const,
+      DATABASE_URL: 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
+      CORS_ORIGIN: 'http://localhost:5173',
+      APP_VERSION: '0.1.0',
+      SHUTDOWN_TIMEOUT_MS: 10_000,
     };
 
     const instance = fastify({
@@ -48,9 +39,9 @@ describe('http error handling integration', () => {
       genReqId: () => randomUUID(),
     }).withTypeProvider<TypeBoxTypeProvider>();
 
-    instance.decorate('di', dependencies);
-
-    await registerCorePlugins(instance);
+    await registerCorePlugins(instance, {
+      configuration,
+    });
 
     instance.post<{ Body: { name: string }; Reply: { name: string } }>(
       '/echo',

@@ -2,6 +2,8 @@ import type { FastifyPluginCallbackTypebox } from '@fastify/type-provider-typebo
 
 import { Type } from '@sinclair/typebox';
 
+import type { ApplicationConfiguration } from '../../app/configuration/configuration-schema.js';
+import type { ReadinessProbe } from '../../app/application-types.js';
 import { ProblemDetailsSchema } from '../../shared/errors/problem-details.js';
 
 const HealthResponseSchema = Type.Object({
@@ -20,7 +22,16 @@ const ReadyResponseSchema = Type.Object({
   status: Type.Union([Type.Literal('ready'), Type.Literal('not_ready')]),
 });
 
-export const systemRoutes: FastifyPluginCallbackTypebox = (app, _options, done) => {
+export interface SystemRoutesOptions {
+  readonly configuration: Pick<ApplicationConfiguration, 'APP_VERSION' | 'NODE_ENV'>;
+  readonly readinessProbe: ReadinessProbe;
+}
+
+export const systemRoutes: FastifyPluginCallbackTypebox<SystemRoutesOptions> = (
+  app,
+  options,
+  done,
+) => {
   app.get(
     '/health',
     {
@@ -35,8 +46,8 @@ export const systemRoutes: FastifyPluginCallbackTypebox = (app, _options, done) 
     },
     () => ({
       service: 'barber-core-api',
-      version: app.di.configuration.APP_VERSION,
-      environment: app.di.configuration.NODE_ENV,
+      version: options.configuration.APP_VERSION,
+      environment: options.configuration.NODE_ENV,
       status: 'ok',
       timestamp: new Date().toISOString(),
     }),
@@ -74,7 +85,7 @@ export const systemRoutes: FastifyPluginCallbackTypebox = (app, _options, done) 
       },
     },
     async (request, reply) => {
-      const readiness = await app.di.readinessProbe();
+      const readiness = await options.readinessProbe();
 
       if (!readiness.ready) {
         return reply.code(503).type('application/problem+json').send({

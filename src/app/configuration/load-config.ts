@@ -2,6 +2,8 @@ import { Value } from '@sinclair/typebox/value';
 
 import { ConfigurationSchema, type ApplicationConfiguration } from './configuration-schema.js';
 
+export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 10_000;
+
 function parseInteger(name: string, value: string | undefined): number | undefined {
   if (value === undefined) {
     return undefined;
@@ -26,6 +28,8 @@ export function loadConfiguration(
     DATABASE_URL: env.DATABASE_URL,
     CORS_ORIGIN: env.CORS_ORIGIN,
     APP_VERSION: env.APP_VERSION,
+    SHUTDOWN_TIMEOUT_MS:
+      parseInteger('SHUTDOWN_TIMEOUT_MS', env.SHUTDOWN_TIMEOUT_MS) ?? DEFAULT_SHUTDOWN_TIMEOUT_MS,
   };
 
   if (!Value.Check(ConfigurationSchema, candidate)) {

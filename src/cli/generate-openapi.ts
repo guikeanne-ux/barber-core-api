@@ -19,6 +19,7 @@ const configuration: Readonly<ApplicationConfiguration> = Object.freeze({
   DATABASE_URL: 'postgresql://placeholder:placeholder@localhost:5432/placeholder',
   CORS_ORIGIN: 'http://localhost:5173',
   APP_VERSION: '0.1.0',
+  SHUTDOWN_TIMEOUT_MS: 10_000,
 });
 
 const dependencies = createDependencies(configuration);

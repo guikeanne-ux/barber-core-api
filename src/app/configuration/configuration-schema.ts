@@ -20,6 +20,7 @@ export const ConfigurationSchema = Type.Object({
   DATABASE_URL: Type.String({ minLength: 1 }),
   CORS_ORIGIN: Type.String({ minLength: 1 }),
   APP_VERSION: Type.String({ minLength: 1 }),
+  SHUTDOWN_TIMEOUT_MS: Type.Integer({ minimum: 1, maximum: 120000 }),
 });
 
 export type ApplicationConfiguration = typeof ConfigurationSchema.static;
