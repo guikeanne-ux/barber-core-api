@@ -12,6 +12,8 @@ x-request-id
 
 If the incoming value is not a valid UUID, the API generates one with `crypto.randomUUID()`.
 
+The same `requestId` is returned in Problem Details responses, including authentication and authorization failures.
+
 ## Log redaction
 
 Sensitive fields are redacted, including:
@@ -23,6 +25,30 @@ Sensitive fields are redacted, including:
 - token
 - secret
 - client secret
+
+Authentication logs also avoid recording:
+
+- access tokens
+- raw JWT claims
+- usernames
+- emails
+- full role arrays
+- JWKS material
+
+## Auth result categories
+
+Protected-route failures are logged with sanitized categories such as:
+
+- `missing_credentials`
+- `invalid_token`
+- `expired_token`
+- `not_yet_valid`
+- `wrong_issuer`
+- `wrong_audience`
+- `insufficient_permissions`
+- `jwks_unavailable`
+- `jwks_timeout`
+- `jwks_invalid_response`
 
 ## Shutdown logs
 

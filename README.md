@@ -1,6 +1,6 @@
 # barber-core-api
 
-`barber-core-api` is the main HTTP API of the Barber Platform ecosystem. This repository currently implements only the technical foundation, without business modules, authentication, or messaging.
+`barber-core-api` is the main HTTP API of the Barber Platform ecosystem. This repository currently implements the technical foundation plus identity integration and route-level authorization, without business modules or messaging.
 
 ## Scope
 
@@ -9,13 +9,13 @@ This repository currently covers only:
 - Fastify and TypeScript application bootstrap
 - PostgreSQL connectivity and migration mechanism
 - technical HTTP endpoints
+- local JWT validation through Keycloak JWKS
+- explicit route-level authentication and authorization helpers
 - error, logging, and lifecycle conventions
 - Docker and CI execution
 
 Deliberately out of scope for now:
 
-- authentication and authorization
-- Keycloak integration
 - business CRUDs and scheduling flows
 - messaging, outbox, RabbitMQ, notifications, or workers
 
@@ -29,6 +29,9 @@ Deliberately out of scope for now:
 - Problem Details responses
 - `x-request-id` propagation
 - structured JSON logs with redaction
+- local access-token validation with `jose` and remote JWKS
+- sanitized authenticated principal at `GET /api/v1/auth/me`
+- role-based authorization with `admin`, `manager`, `barber`, and `receptionist`
 - OpenAPI generation and Swagger UI
 - unit, integration, and Docker smoke tests
 - Docker and GitHub Actions pipeline
@@ -53,6 +56,7 @@ There is no global service locator. Each module receives only the dependencies i
 Current technical module:
 
 - `system`
+- `auth`
 
 ## Health endpoints
 
@@ -71,6 +75,12 @@ cp .env.example .env
 npm ci
 npm run dev
 ```
+
+Identity-related local defaults in `.env.example` point to the `barber-identity` Keycloak realm:
+
+- `OIDC_ISSUER_URL=http://localhost:8080/realms/barber`
+- `OIDC_JWKS_URL=http://localhost:8080/realms/barber/protocol/openid-connect/certs`
+- `OIDC_AUDIENCE=barber-core-api`
 
 Production-style local run:
 
@@ -100,6 +110,8 @@ npm run test:coverage
 npm run validate
 ```
 
+Auth integration tests use a controlled local JWKS harness and do not require a real Keycloak process.
+
 ## Docker
 
 ```bash
@@ -124,6 +136,12 @@ Commands:
 npm run openapi:generate
 npm run openapi:check
 ```
+
+The contract now includes:
+
+- `bearerAuth` security scheme
+- `GET /api/v1/auth/me`
+- standardized `401`, `403`, and `503` Problem Details for protected routes
 
 ## Graceful shutdown
 
