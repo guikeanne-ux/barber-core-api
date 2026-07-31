@@ -40,6 +40,18 @@ npm run smoke
 
 The Docker smoke flow starts an ephemeral JWKS fixture on the host during `npm run smoke`. It does not require a real Keycloak container, does not version private keys, and validates authenticated catalog operations against the running API container.
 
+During the smoke run, the script:
+
+- starts the temporary JWKS fixture on the host at `http://127.0.0.1:18080`
+- recreates only the `api` container with temporary OIDC values pointing to `http://host.docker.internal:18080/realms/barber`
+- confirms the effective `OIDC_ISSUER_URL`, `OIDC_JWKS_URL`, and `OIDC_AUDIENCE` inside the container before the authenticated probe
+
+This temporary OIDC configuration exists only for the smoke execution. To return the API container to the normal local development configuration backed by `barber-identity`, run:
+
+```bash
+npm run docker:up
+```
+
 ## Technical endpoints
 
 - `GET /health`

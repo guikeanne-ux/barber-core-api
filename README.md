@@ -126,6 +126,8 @@ npm run docker:logs
 npm run smoke
 ```
 
+`npm run smoke` starts a temporary JWKS fixture on the host, recreates the `api` container with smoke-specific OIDC values that target `host.docker.internal`, validates `/api/v1/auth/me`, and then exercises the catalog flow without requiring a real Keycloak container. No token, private key, or fixture state is versioned.
+
 ## OpenAPI
 
 The contract is generated from the Fastify + TypeBox schemas and versioned at:

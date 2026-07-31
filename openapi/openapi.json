@@ -650,9 +650,12 @@
                 "additionalProperties": false,
                 "properties": {
                   "bio": {
+                    "maxLength": 1000,
                     "type": "string"
                   },
                   "name": {
+                    "maxLength": 120,
+                    "minLength": 2,
                     "type": "string"
                   }
                 },
@@ -1430,6 +1433,7 @@
                   "bio": {
                     "anyOf": [
                       {
+                        "maxLength": 1000,
                         "type": "string"
                       },
                       {
@@ -1438,6 +1442,8 @@
                     ]
                   },
                   "name": {
+                    "maxLength": 120,
+                    "minLength": 2,
                     "type": "string"
                   }
                 },
@@ -4354,6 +4360,7 @@
                 "additionalProperties": false,
                 "properties": {
                   "description": {
+                    "maxLength": 1000,
                     "type": "string"
                   },
                   "durationMinutes": {
@@ -4362,6 +4369,8 @@
                     "type": "integer"
                   },
                   "name": {
+                    "maxLength": 120,
+                    "minLength": 2,
                     "type": "string"
                   },
                   "priceCents": {
@@ -5184,6 +5193,7 @@
                   "description": {
                     "anyOf": [
                       {
+                        "maxLength": 1000,
                         "type": "string"
                       },
                       {
@@ -5197,6 +5207,8 @@
                     "type": "integer"
                   },
                   "name": {
+                    "maxLength": 120,
+                    "minLength": 2,
                     "type": "string"
                   },
                   "priceCents": {
