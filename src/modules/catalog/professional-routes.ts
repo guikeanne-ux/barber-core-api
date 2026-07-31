@@ -14,7 +14,11 @@ import {
   UpdateProfessionalBodySchema,
   createPaginatedResponseSchema,
 } from './catalog-schemas.js';
-import { coerceCatalogListQuery } from './coerce-catalog-list-query.js';
+import {
+  normalizeCatalogListQuery,
+  normalizeCreateProfessionalBody,
+  normalizeUpdateProfessionalBody,
+} from './catalog-http-normalization.js';
 
 const EmptySuccessSchema = Type.Null({});
 const ProfessionalListSchema = createPaginatedResponseSchema(ProfessionalSchema);
@@ -51,6 +55,10 @@ export const professionalRoutes: FastifyPluginCallbackTypebox<CatalogModuleOptio
           503: ProblemDetailsSchema,
         },
       },
+      preValidation: (request, _reply, done) => {
+        normalizeCreateProfessionalBody(request.body);
+        done();
+      },
       preHandler: writePolicy,
     },
     async (request, reply) => {
@@ -81,7 +89,7 @@ export const professionalRoutes: FastifyPluginCallbackTypebox<CatalogModuleOptio
         },
       },
       preValidation: (request, _reply, done) => {
-        coerceCatalogListQuery(request.query);
+        normalizeCatalogListQuery(request.query);
         done();
       },
       preHandler: readPolicy,
@@ -132,6 +140,10 @@ export const professionalRoutes: FastifyPluginCallbackTypebox<CatalogModuleOptio
           404: ProblemDetailsSchema,
           503: ProblemDetailsSchema,
         },
+      },
+      preValidation: (request, _reply, done) => {
+        normalizeUpdateProfessionalBody(request.body);
+        done();
       },
       preHandler: writePolicy,
     },

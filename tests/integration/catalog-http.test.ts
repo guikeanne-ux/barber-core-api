@@ -808,6 +808,276 @@ describe('catalog HTTP integration', () => {
     }
   });
 
+  it('normalizes q before applying the HTTP schema across all catalog list routes', async () => {
+    const app = await buildCatalogTestApplication({
+      databaseUrl,
+      jwksUrl: jwksServer.url,
+    });
+
+    try {
+      const professional = await app.inject({
+        method: 'POST',
+        url: '/api/v1/professionals',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: '  Corte Expert  ',
+          bio: '   ',
+        },
+      });
+      expect(professional.statusCode).toBe(201);
+      expect(professional.json()).not.toHaveProperty('bio');
+      const professionalId = professional.json<{ id: string }>().id;
+
+      const service = await app.inject({
+        method: 'POST',
+        url: '/api/v1/services',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: '  Corte Premium  ',
+          description: '   ',
+          durationMinutes: 30,
+          priceCents: 4500,
+        },
+      });
+      expect(service.statusCode).toBe(201);
+      expect(service.json()).not.toHaveProperty('description');
+      const serviceId = service.json<{ id: string }>().id;
+
+      const associate = await app.inject({
+        method: 'PUT',
+        url: `/api/v1/professionals/${professionalId}/services/${serviceId}`,
+        headers: authHeaders(adminToken),
+      });
+      expect(associate.statusCode).toBe(204);
+
+      const trimmedHundred = `  ${'A'.repeat(100)}  `;
+      const overHundred = `  ${'B'.repeat(101)}  `;
+
+      const professionalTrimmedSearch = await app.inject({
+        method: 'GET',
+        url: `/api/v1/professionals?status=all&q=${encodeURIComponent('   corte   ')}`,
+        headers: authHeaders(adminToken),
+      });
+      expect(professionalTrimmedSearch.statusCode).toBe(200);
+      expect(professionalTrimmedSearch.json()).toMatchObject({
+        totalItems: 1,
+      });
+
+      const professionalStatusAll = await app.inject({
+        method: 'GET',
+        url: '/api/v1/professionals?status=all',
+        headers: authHeaders(adminToken),
+      });
+      expect(professionalStatusAll.statusCode).toBe(200);
+
+      const professionalBlankSearch = await app.inject({
+        method: 'GET',
+        url: `/api/v1/professionals?status=all&q=${encodeURIComponent('      ')}`,
+        headers: authHeaders(adminToken),
+      });
+      expect(professionalBlankSearch.statusCode).toBe(200);
+      expect(professionalBlankSearch.json()).toMatchObject(professionalStatusAll.json());
+
+      const serviceHundredCharacters = await app.inject({
+        method: 'GET',
+        url: `/api/v1/services?status=all&q=${encodeURIComponent(trimmedHundred)}`,
+        headers: authHeaders(adminToken),
+      });
+      expect(serviceHundredCharacters.statusCode).toBe(200);
+
+      const serviceOverLimit = await app.inject({
+        method: 'GET',
+        url: `/api/v1/services?status=all&q=${encodeURIComponent(overHundred)}`,
+        headers: authHeaders(adminToken),
+      });
+      expect(serviceOverLimit.statusCode).toBe(400);
+      expect(serviceOverLimit.json<ProblemDetailsResponse>().code).toBe('VALIDATION_ERROR');
+
+      const nestedLiteralWildcard = await app.inject({
+        method: 'GET',
+        url: `/api/v1/professionals/${professionalId}/services?status=all&q=${encodeURIComponent('  %  ')}`,
+        headers: authHeaders(adminToken),
+      });
+      expect(nestedLiteralWildcard.statusCode).toBe(200);
+      expect(nestedLiteralWildcard.json()).toMatchObject({
+        totalItems: 0,
+      });
+
+      const nestedLiteralUnderscore = await app.inject({
+        method: 'GET',
+        url: `/api/v1/professionals/${professionalId}/services?status=all&q=${encodeURIComponent('  _  ')}`,
+        headers: authHeaders(adminToken),
+      });
+      expect(nestedLiteralUnderscore.statusCode).toBe(200);
+      expect(nestedLiteralUnderscore.json()).toMatchObject({
+        totalItems: 0,
+      });
+    } finally {
+      await app.close();
+    }
+  });
+
+  it('enforces trimmed text limits through HTTP schemas for names, bio, and description', async () => {
+    const app = await buildCatalogTestApplication({
+      databaseUrl,
+      jwksUrl: jwksServer.url,
+    });
+
+    try {
+      const nameAtMinimum = await app.inject({
+        method: 'POST',
+        url: '/api/v1/professionals',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: '  Al  ',
+        },
+      });
+      expect(nameAtMinimum.statusCode).toBe(201);
+      expect(nameAtMinimum.json()).toMatchObject({
+        name: 'Al',
+      });
+
+      const nameBelowMinimum = await app.inject({
+        method: 'POST',
+        url: '/api/v1/professionals',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: '  A  ',
+        },
+      });
+      expect(nameBelowMinimum.statusCode).toBe(400);
+
+      const nameAtMaximum = await app.inject({
+        method: 'POST',
+        url: '/api/v1/services',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: `  ${'N'.repeat(120)}  `,
+          durationMinutes: 30,
+          priceCents: 4500,
+        },
+      });
+      expect(nameAtMaximum.statusCode).toBe(201);
+      expect(nameAtMaximum.json()).toMatchObject({
+        name: 'N'.repeat(120),
+      });
+
+      const nameAboveMaximum = await app.inject({
+        method: 'POST',
+        url: '/api/v1/services',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: `  ${'N'.repeat(121)}  `,
+          durationMinutes: 30,
+          priceCents: 4500,
+        },
+      });
+      expect(nameAboveMaximum.statusCode).toBe(400);
+
+      const bioAtMaximum = await app.inject({
+        method: 'POST',
+        url: '/api/v1/professionals',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: 'Beatriz',
+          bio: `  ${'B'.repeat(1000)}  `,
+        },
+      });
+      expect(bioAtMaximum.statusCode).toBe(201);
+      expect(bioAtMaximum.json()).toMatchObject({
+        bio: 'B'.repeat(1000),
+      });
+      const bioProfessionalId = bioAtMaximum.json<{ id: string }>().id;
+
+      const bioAboveMaximum = await app.inject({
+        method: 'POST',
+        url: '/api/v1/professionals',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: 'Carla',
+          bio: `  ${'B'.repeat(1001)}  `,
+        },
+      });
+      expect(bioAboveMaximum.statusCode).toBe(400);
+
+      const blankBioPatch = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/professionals/${bioProfessionalId}`,
+        headers: authHeaders(adminToken),
+        payload: {
+          bio: '   ',
+        },
+      });
+      expect(blankBioPatch.statusCode).toBe(400);
+      expect(blankBioPatch.json<ProblemDetailsResponse>().code).toBe('VALIDATION_ERROR');
+
+      const nullBioPatch = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/professionals/${bioProfessionalId}`,
+        headers: authHeaders(adminToken),
+        payload: {
+          bio: null,
+        },
+      });
+      expect(nullBioPatch.statusCode).toBe(200);
+      expect(nullBioPatch.json()).not.toHaveProperty('bio');
+
+      const descriptionAtMaximum = await app.inject({
+        method: 'POST',
+        url: '/api/v1/services',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: 'Descricao valida',
+          description: `  ${'D'.repeat(1000)}  `,
+          durationMinutes: 30,
+          priceCents: 4500,
+        },
+      });
+      expect(descriptionAtMaximum.statusCode).toBe(201);
+      expect(descriptionAtMaximum.json()).toMatchObject({
+        description: 'D'.repeat(1000),
+      });
+      const describedServiceId = descriptionAtMaximum.json<{ id: string }>().id;
+
+      const descriptionAboveMaximum = await app.inject({
+        method: 'POST',
+        url: '/api/v1/services',
+        headers: authHeaders(adminToken),
+        payload: {
+          name: 'Descricao invalida',
+          description: `  ${'D'.repeat(1001)}  `,
+          durationMinutes: 30,
+          priceCents: 4500,
+        },
+      });
+      expect(descriptionAboveMaximum.statusCode).toBe(400);
+
+      const blankDescriptionPatch = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/services/${describedServiceId}`,
+        headers: authHeaders(adminToken),
+        payload: {
+          description: '   ',
+        },
+      });
+      expect(blankDescriptionPatch.statusCode).toBe(400);
+      expect(blankDescriptionPatch.json<ProblemDetailsResponse>().code).toBe('VALIDATION_ERROR');
+
+      const nullDescriptionPatch = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/services/${describedServiceId}`,
+        headers: authHeaders(adminToken),
+        payload: {
+          description: null,
+        },
+      });
+      expect(nullDescriptionPatch.statusCode).toBe(200);
+      expect(nullDescriptionPatch.json()).not.toHaveProperty('description');
+    } finally {
+      await app.close();
+    }
+  });
+
   it('applies authentication and authorization policies to catalog routes', async () => {
     const app = await buildCatalogTestApplication({
       databaseUrl,

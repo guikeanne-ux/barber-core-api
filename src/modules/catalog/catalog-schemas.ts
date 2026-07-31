@@ -103,8 +103,8 @@ export const ProfessionalServiceCapabilityParamsSchema = Type.Object(
 
 export const CreateProfessionalBodySchema = Type.Object(
   {
-    name: Type.String(),
-    bio: Type.Optional(Type.String()),
+    name: Type.String({ minLength: 2, maxLength: 120 }),
+    bio: Type.Optional(Type.String({ maxLength: 1000 })),
   },
   {
     additionalProperties: false,
@@ -114,8 +114,8 @@ export const CreateProfessionalBodySchema = Type.Object(
 
 export const UpdateProfessionalBodySchema = Type.Object(
   {
-    name: Type.Optional(Type.String()),
-    bio: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    name: Type.Optional(Type.String({ minLength: 2, maxLength: 120 })),
+    bio: Type.Optional(Type.Union([Type.String({ maxLength: 1000 }), Type.Null()])),
   },
   {
     additionalProperties: false,
@@ -125,8 +125,8 @@ export const UpdateProfessionalBodySchema = Type.Object(
 
 export const CreateServiceBodySchema = Type.Object(
   {
-    name: Type.String(),
-    description: Type.Optional(Type.String()),
+    name: Type.String({ minLength: 2, maxLength: 120 }),
+    description: Type.Optional(Type.String({ maxLength: 1000 })),
     durationMinutes: Type.Integer({ minimum: 5, maximum: 480 }),
     priceCents: Type.Integer({ minimum: 0, maximum: 10_000_000 }),
   },
@@ -138,8 +138,8 @@ export const CreateServiceBodySchema = Type.Object(
 
 export const UpdateServiceBodySchema = Type.Object(
   {
-    name: Type.Optional(Type.String()),
-    description: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    name: Type.Optional(Type.String({ minLength: 2, maxLength: 120 })),
+    description: Type.Optional(Type.Union([Type.String({ maxLength: 1000 }), Type.Null()])),
     durationMinutes: Type.Optional(Type.Integer({ minimum: 5, maximum: 480 })),
     priceCents: Type.Optional(Type.Integer({ minimum: 0, maximum: 10_000_000 })),
   },

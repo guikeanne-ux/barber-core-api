@@ -12,7 +12,11 @@ import {
   UpdateServiceBodySchema,
   createPaginatedResponseSchema,
 } from './catalog-schemas.js';
-import { coerceCatalogListQuery } from './coerce-catalog-list-query.js';
+import {
+  normalizeCatalogListQuery,
+  normalizeCreateServiceBody,
+  normalizeUpdateServiceBody,
+} from './catalog-http-normalization.js';
 
 const ServiceListSchema = createPaginatedResponseSchema(BarberServiceSchema);
 
@@ -48,6 +52,10 @@ export const serviceRoutes: FastifyPluginCallbackTypebox<CatalogModuleOptions> =
           503: ProblemDetailsSchema,
         },
       },
+      preValidation: (request, _reply, done) => {
+        normalizeCreateServiceBody(request.body);
+        done();
+      },
       preHandler: writePolicy,
     },
     async (request, reply) => {
@@ -75,7 +83,7 @@ export const serviceRoutes: FastifyPluginCallbackTypebox<CatalogModuleOptions> =
         },
       },
       preValidation: (request, _reply, done) => {
-        coerceCatalogListQuery(request.query);
+        normalizeCatalogListQuery(request.query);
         done();
       },
       preHandler: readPolicy,
@@ -126,6 +134,10 @@ export const serviceRoutes: FastifyPluginCallbackTypebox<CatalogModuleOptions> =
           404: ProblemDetailsSchema,
           503: ProblemDetailsSchema,
         },
+      },
+      preValidation: (request, _reply, done) => {
+        normalizeUpdateServiceBody(request.body);
+        done();
       },
       preHandler: writePolicy,
     },
@@ -201,7 +213,7 @@ export const serviceRoutes: FastifyPluginCallbackTypebox<CatalogModuleOptions> =
         },
       },
       preValidation: (request, _reply, done) => {
-        coerceCatalogListQuery(request.query);
+        normalizeCatalogListQuery(request.query);
         done();
       },
       preHandler: readPolicy,
