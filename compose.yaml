@@ -1,4 +1,32 @@
 services:
+  smoke-jwks:
+    build:
+      context: .
+      target: runtime
+    init: true
+    environment:
+      SMOKE_JWKS_PORT: 18080
+      SMOKE_JWKS_ISSUER_URL: http://smoke-jwks:18080/realms/barber
+    command:
+      - node
+      - scripts/smoke-jwks-fixture.mjs
+      - serve
+      - /tmp/barber-core-api-smoke-jwks
+      - '18080'
+      - http://smoke-jwks:18080/realms/barber
+    ports:
+      - '${SMOKE_JWKS_PORT:-18080}:18080'
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - fetch('http://127.0.0.1:18080/healthz').then((res)=>{if(!res.ok) process.exit(1)}).catch(()=>process.exit(1))
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
   postgres:
     image: postgres:18.4-bookworm
     environment:
@@ -41,6 +69,8 @@ services:
       target: runtime
     init: true
     depends_on:
+      smoke-jwks:
+        condition: service_healthy
       postgres:
         condition: service_healthy
       migrate:
@@ -54,15 +84,13 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173}
       APP_VERSION: ${APP_VERSION:-0.1.0}
       SHUTDOWN_TIMEOUT_MS: ${SHUTDOWN_TIMEOUT_MS:-10000}
-      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-http://host.docker.internal:18080/realms/barber}
-      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://host.docker.internal:18080/realms/barber/protocol/openid-connect/certs}
+      OIDC_ISSUER_URL: ${OIDC_ISSUER_URL:-http://smoke-jwks:18080/realms/barber}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-http://smoke-jwks:18080/realms/barber/protocol/openid-connect/certs}
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-barber-core-api}
       OIDC_CLOCK_TOLERANCE_SECONDS: ${OIDC_CLOCK_TOLERANCE_SECONDS:-5}
       OIDC_JWKS_TIMEOUT_MS: ${OIDC_JWKS_TIMEOUT_MS:-3000}
     ports:
       - '${API_PORT:-3000}:3000'
-    extra_hosts:
-      - 'host.docker.internal:host-gateway'
     healthcheck:
       test:
         - CMD

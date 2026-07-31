@@ -75,7 +75,7 @@ async function serve(stateDirectory, port, issuerUrl) {
     jwks_uri: `${issuerUrl}/protocol/openid-connect/certs`,
   };
 
-  const server = http.createServer((request, response) => {
+  const server = http.createServer(async (request, response) => {
     const url = new globalThis.URL(
       request.url ?? '/',
       `http://${request.headers.host ?? '127.0.0.1'}`,
@@ -96,6 +96,26 @@ async function serve(stateDirectory, port, issuerUrl) {
     if (url.pathname === '/realms/barber/protocol/openid-connect/certs') {
       response.writeHead(200, { 'content-type': 'application/json' });
       response.end(JSON.stringify(jwks));
+      return;
+    }
+
+    if (url.pathname === '/token') {
+      const rolesValue = url.searchParams.get('roles') ?? 'admin';
+      const subject = url.searchParams.get('subject') ?? 'smoke-user';
+
+      try {
+        const token = await issueToken(stateDirectory, rolesValue, subject, issuerUrl);
+        response.writeHead(200, { 'content-type': 'application/json' });
+        response.end(JSON.stringify({ accessToken: token }));
+      } catch (error) {
+        response.writeHead(500, { 'content-type': 'application/json' });
+        response.end(
+          JSON.stringify({
+            error: 'token_issue_failed',
+            detail: error instanceof Error ? error.message : 'unknown_error',
+          }),
+        );
+      }
       return;
     }
 
@@ -167,7 +187,7 @@ async function issueToken(stateDirectory, rolesValue, subject, issuerUrl) {
     .setExpirationTime(now + 300)
     .sign(privateKey);
 
-  process.stdout.write(token);
+  return token;
 }
 
 async function main() {
@@ -191,7 +211,8 @@ async function main() {
     const rolesValue = readArgument(4, 'admin');
     const subject = readArgument(5, 'smoke-user');
     const tokenIssuerUrl = readArgument(6, DEFAULT_ISSUER);
-    await issueToken(stateDirectory, rolesValue, subject, tokenIssuerUrl);
+    const token = await issueToken(stateDirectory, rolesValue, subject, tokenIssuerUrl);
+    process.stdout.write(token);
     return;
   }
 
