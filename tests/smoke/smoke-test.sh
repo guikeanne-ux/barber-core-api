@@ -10,7 +10,7 @@ SMOKE_JWKS_PORT="${SMOKE_JWKS_PORT:-18080}"
 SMOKE_JWKS_BASE_URL="${SMOKE_JWKS_BASE_URL:-http://127.0.0.1:${SMOKE_JWKS_PORT}}"
 
 cleanup() {
-  rm -f /tmp/barber-core-api-auth-me.json /tmp/barber-core-api-professional.json /tmp/barber-core-api-service.json /tmp/barber-core-api-list.json /tmp/barber-core-api-forbidden.json
+  rm -f /tmp/barber-core-api-auth-me.json /tmp/barber-core-api-authenticated-probe.json /tmp/barber-core-api-professional.json /tmp/barber-core-api-service.json /tmp/barber-core-api-list.json /tmp/barber-core-api-forbidden.json
 }
 
 trap cleanup EXIT
@@ -35,6 +35,31 @@ wait_for_url "JWKS fixture" "${SMOKE_JWKS_BASE_URL}/healthz"
 wait_for_url "Liveness" "${BASE_URL}/health/live"
 wait_for_url "Readiness" "${BASE_URL}/health/ready"
 wait_for_url "OpenAPI" "${BASE_URL}/docs/json"
+
+wait_for_internal_jwks_reachability() {
+  local script="$1"
+  local description="$2"
+
+  for _ in $(seq 1 45); do
+    if docker compose exec -T api node -e "${script}" >/dev/null 2>&1; then
+      echo "API internal ${description} is ready"
+      return 0
+    fi
+
+    sleep 1
+  done
+
+  echo "Timed out waiting for API internal ${description}" >&2
+  docker compose logs --no-color --tail=100 api smoke-jwks >&2 || true
+  return 1
+}
+
+wait_for_internal_jwks_reachability \
+  "fetch('http://smoke-jwks:18080/healthz').then((response)=>{if(!response.ok) process.exit(1)}).catch(()=>process.exit(1))" \
+  "JWKS health"
+wait_for_internal_jwks_reachability \
+  "fetch('http://smoke-jwks:18080/realms/barber/protocol/openid-connect/certs').then(async (response)=>{if(!response.ok) process.exit(1); const body = await response.json(); if (!Array.isArray(body.keys) || body.keys.length === 0) process.exit(1)}).catch(()=>process.exit(1))" \
+  "JWKS fetch"
 
 curl -fsS "${BASE_URL}/health" | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (json.service !== 'barber-core-api') process.exit(1); })"
 curl -fsS "${BASE_URL}/docs/json" | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (json.openapi !== '3.1.0') process.exit(1); })"
@@ -61,7 +86,7 @@ wait_for_authenticated_request() {
   local token="$2"
   local output_file="$3"
 
-  for _ in $(seq 1 30); do
+  for _ in $(seq 1 45); do
     local status
     status="$(
       curl -sS -o "${output_file}" -w '%{http_code}' \
