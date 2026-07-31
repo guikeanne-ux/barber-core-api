@@ -1,0 +1,59 @@
+{
+  "name": "barber-core-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Technical foundation for the Barber Platform core API",
+  "type": "module",
+  "engines": {
+    "node": "24.18.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/src/index.js",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:coverage": "vitest run --coverage",
+    "db:migrate": "tsx src/cli/migrate.ts",
+    "db:rollback": "tsx src/cli/rollback-migration.ts",
+    "db:migration:create": "node scripts/create-migration.mjs",
+    "openapi:generate": "tsx src/cli/generate-openapi.ts",
+    "openapi:check": "npm run openapi:generate && git diff --exit-code -- openapi/openapi.json",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down --remove-orphans",
+    "docker:reset": "docker compose down -v --remove-orphans",
+    "docker:logs": "docker compose logs -f --tail=200",
+    "smoke": "bash tests/smoke/smoke-test.sh",
+    "validate": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run openapi:check"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.1.0",
+    "@fastify/helmet": "^13.0.2",
+    "@fastify/swagger": "^9.6.1",
+    "@fastify/swagger-ui": "^5.2.3",
+    "@fastify/type-provider-typebox": "^6.1.0",
+    "@sinclair/typebox": "^0.34.41",
+    "fastify": "^5.6.1",
+    "kysely": "^0.28.8",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.32.0",
+    "@types/node": "^24.3.0",
+    "@types/pg": "^8.15.5",
+    "@vitest/coverage-v8": "^3.2.4",
+    "eslint": "^9.32.0",
+    "prettier": "^3.6.2",
+    "testcontainers": "^11.5.1",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.38.0",
+    "vitest": "^3.2.4"
+  }
+}

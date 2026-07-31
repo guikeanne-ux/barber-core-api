@@ -1,0 +1,6 @@
+AGENTS.md
+specs/
+openapi/openapi.json
+coverage/
+dist/
+package-lock.json
