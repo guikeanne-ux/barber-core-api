@@ -26,6 +26,10 @@ Protected routes may also return:
 - `403 Forbidden`
 - `503 Service Unavailable`
 
+Unexpected internal failures continue to use:
+
+- `500 Internal Server Error`
+
 Current public codes:
 
 - `AUTHENTICATION_REQUIRED`
@@ -40,3 +44,9 @@ WWW-Authenticate: Bearer
 ```
 
 The API does not expose raw JWT claims, stack traces, verification internals, or JWKS payload details in public error responses.
+
+Authentication verification failures are classified as:
+
+- `401` for missing credentials, malformed bearer tokens, invalid signatures, invalid claims, and tokens without a matching key after a valid JWKS lookup
+- `503` for known identity-provider operational failures such as timeout, unreachable JWKS endpoint, HTTP error responses, and invalid JWKS payloads
+- `500` for unexpected internal defects outside the known authentication failure categories

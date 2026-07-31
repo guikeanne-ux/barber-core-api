@@ -32,6 +32,7 @@ Authentication logs also avoid recording:
 - raw JWT claims
 - usernames
 - emails
+- subjects
 - full role arrays
 - JWKS material
 
@@ -49,6 +50,8 @@ Protected-route failures are logged with sanitized categories such as:
 - `jwks_unavailable`
 - `jwks_timeout`
 - `jwks_invalid_response`
+
+Unexpected internal failures are logged with sanitized request context plus a bounded error name and message, while public responses remain generic `500 INTERNAL_ERROR` Problem Details.
 
 ## Shutdown logs
 

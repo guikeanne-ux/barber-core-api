@@ -29,6 +29,8 @@ npm run dev
 
 When protected routes receive a token and the configured JWKS endpoint is unavailable, the API returns `503 IDENTITY_PROVIDER_UNAVAILABLE`. Startup itself does not require Keycloak to be reachable.
 
+Once a JWKS key has already been resolved and cached for a known `kid`, the API can continue validating tokens signed with that cached key during a temporary JWKS outage. Tokens signed with a new `kid` still fail with `503` until the JWKS endpoint becomes reachable again.
+
 ## Run the containerized environment
 
 ```bash
