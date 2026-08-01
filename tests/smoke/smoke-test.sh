@@ -11,6 +11,9 @@ SMOKE_JWKS_BASE_URL="${SMOKE_JWKS_BASE_URL:-http://127.0.0.1:${SMOKE_JWKS_PORT}}
 SMOKE_OIDC_ISSUER_URL="${SMOKE_OIDC_ISSUER_URL:-http://host.docker.internal:${SMOKE_JWKS_PORT}/realms/barber}"
 SMOKE_OIDC_JWKS_URL="${SMOKE_OIDC_JWKS_URL:-${SMOKE_OIDC_ISSUER_URL}/protocol/openid-connect/certs}"
 SMOKE_OIDC_AUDIENCE="${SMOKE_OIDC_AUDIENCE:-barber-core-api}"
+SMOKE_BUSINESS_TIME_ZONE="${SMOKE_BUSINESS_TIME_ZONE:-America/Sao_Paulo}"
+SMOKE_WEEKLY_DATE="${SMOKE_WEEKLY_DATE:-2026-08-03}"
+SMOKE_CLOSED_DATE="${SMOKE_CLOSED_DATE:-2026-08-04}"
 SMOKE_JWKS_STATE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/barber-core-api-smoke.XXXXXX")"
 SMOKE_ENV_FILE="$(mktemp "${TMPDIR:-/tmp}/barber-core-api-smoke-env.XXXXXX")"
 SMOKE_COMPOSE_CONFIG_FILE="$(mktemp "${TMPDIR:-/tmp}/barber-core-api-smoke-compose.XXXXXX")"
@@ -32,8 +35,10 @@ cleanup() {
     /tmp/barber-core-api-jwks-health.log \
     /tmp/barber-core-api-jwks-fetch.log \
     /tmp/barber-core-api-professional.json \
-    /tmp/barber-core-api-service.json \
-    /tmp/barber-core-api-list.json \
+    /tmp/barber-core-api-weekly.json \
+    /tmp/barber-core-api-weekly-read.json \
+    /tmp/barber-core-api-override.json \
+    /tmp/barber-core-api-resolved.json \
     /tmp/barber-core-api-forbidden.json
 }
 
@@ -43,6 +48,7 @@ cat >"${SMOKE_ENV_FILE}" <<EOF
 OIDC_ISSUER_URL=${SMOKE_OIDC_ISSUER_URL}
 OIDC_JWKS_URL=${SMOKE_OIDC_JWKS_URL}
 OIDC_AUDIENCE=${SMOKE_OIDC_AUDIENCE}
+BUSINESS_TIME_ZONE=${SMOKE_BUSINESS_TIME_ZONE}
 EOF
 
 node scripts/smoke-jwks-fixture.mjs serve "${SMOKE_JWKS_STATE_DIR}" "${SMOKE_JWKS_PORT}" "${SMOKE_OIDC_ISSUER_URL}" &
@@ -190,8 +196,8 @@ wait_for_internal_jwks_reachability \
   "JWKS fetch" \
   /tmp/barber-core-api-jwks-fetch.log
 
-curl -fsS "${BASE_URL}/health" | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (json.service !== 'barber-core-api') process.exit(1); })"
-curl -fsS "${BASE_URL}/docs/json" | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (json.openapi !== '3.1.0') process.exit(1); if (json.components?.securitySchemes?.bearerAuth?.scheme !== 'bearer') process.exit(1); })"
+curl -fsS "${BASE_URL}/health" | node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync(0, 'utf8')); if (json.service !== 'barber-core-api') process.exit(1);"
+curl -fsS "${BASE_URL}/docs/json" | node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync(0, 'utf8')); if (json.openapi !== '3.1.0') process.exit(1); if (json.components?.securitySchemes?.bearerAuth?.scheme !== 'bearer') process.exit(1);"
 
 auth_status="$(curl -sS -o /tmp/barber-core-api-auth-me.json -w '%{http_code}' "${BASE_URL}/api/v1/auth/me")"
 if [[ "${auth_status}" != "401" ]]; then
@@ -202,11 +208,11 @@ node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync(
 
 admin_token="$(
   curl -fsS "${SMOKE_JWKS_BASE_URL}/token?roles=admin&subject=smoke-admin" \
-    | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (!json.accessToken) process.exit(1); process.stdout.write(json.accessToken); })"
+    | node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync(0, 'utf8')); if (!json.accessToken) process.exit(1); process.stdout.write(json.accessToken);"
 )"
 barber_token="$(
   curl -fsS "${SMOKE_JWKS_BASE_URL}/token?roles=barber&subject=smoke-barber" \
-    | node -e "process.stdin.once('data', (buf) => { const json = JSON.parse(buf.toString()); if (!json.accessToken) process.exit(1); process.stdout.write(json.accessToken); })"
+    | node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync(0, 'utf8')); if (!json.accessToken) process.exit(1); process.stdout.write(json.accessToken);"
 )"
 
 wait_for_authenticated_request \
@@ -229,50 +235,66 @@ if [[ "${professional_status}" != "201" ]]; then
   exit 1
 fi
 
-service_status="$(
-  curl -sS -o /tmp/barber-core-api-service.json -w '%{http_code}' \
-    -X POST "${BASE_URL}/api/v1/services" \
+professional_id="$(node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-professional.json', 'utf8')); if (!json.id) process.exit(1); process.stdout.write(json.id);")"
+
+weekly_status="$(
+  curl -sS -o /tmp/barber-core-api-weekly.json -w '%{http_code}' \
+    -X PUT "${BASE_URL}/api/v1/professionals/${professional_id}/availability/weekly" \
     -H "Authorization: Bearer ${admin_token}" \
     -H 'Content-Type: application/json' \
-    --data '{"name":"Smoke Cut","durationMinutes":30,"priceCents":4500}'
+    --data '{"week":{"monday":[{"start":"09:00","end":"12:00"},{"start":"13:00","end":"18:00"}],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}}'
 )"
-if [[ "${service_status}" != "201" ]]; then
-  echo "Expected authenticated service creation to return 201, got ${service_status}" >&2
-  cat /tmp/barber-core-api-service.json >&2 || true
+if [[ "${weekly_status}" != "200" ]]; then
+  echo "Expected weekly availability replacement to return 200, got ${weekly_status}" >&2
+  cat /tmp/barber-core-api-weekly.json >&2 || true
   exit 1
 fi
+node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-weekly.json', 'utf8')); if (json.timeZone !== process.argv[1]) process.exit(1); if (!json.updatedAt) process.exit(1); if (!Array.isArray(json.week?.monday) || json.week.monday.length !== 2) process.exit(1);" "${SMOKE_BUSINESS_TIME_ZONE}"
 
-professional_id="$(node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-professional.json', 'utf8')); if (!json.id) process.exit(1); process.stdout.write(json.id);")"
-service_id="$(node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-service.json', 'utf8')); if (!json.id) process.exit(1); process.stdout.write(json.id);")"
-
-capability_status="$(
-  curl -sS -o /dev/null -w '%{http_code}' \
-    -X PUT "${BASE_URL}/api/v1/professionals/${professional_id}/services/${service_id}" \
-    -H "Authorization: Bearer ${admin_token}"
-)"
-if [[ "${capability_status}" != "204" ]]; then
-  echo "Expected capability association to return 204, got ${capability_status}" >&2
-  exit 1
-fi
-
-list_status="$(
-  curl -sS -o /tmp/barber-core-api-list.json -w '%{http_code}' \
-    "${BASE_URL}/api/v1/professionals/${professional_id}/services?page=1&pageSize=20" \
+weekly_read_status="$(
+  curl -sS -o /tmp/barber-core-api-weekly-read.json -w '%{http_code}' \
+    "${BASE_URL}/api/v1/professionals/${professional_id}/availability/weekly" \
     -H "Authorization: Bearer ${barber_token}"
 )"
-if [[ "${list_status}" != "200" ]]; then
-  echo "Expected nested service list to return 200, got ${list_status}" >&2
-  cat /tmp/barber-core-api-list.json >&2 || true
+if [[ "${weekly_read_status}" != "200" ]]; then
+  echo "Expected weekly availability read to return 200, got ${weekly_read_status}" >&2
+  cat /tmp/barber-core-api-weekly-read.json >&2 || true
   exit 1
 fi
-node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-list.json', 'utf8')); if (json.totalItems !== 1) process.exit(1); if (json.items?.[0]?.id !== process.argv[1]) process.exit(1);" "${service_id}"
+node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-weekly-read.json', 'utf8')); if (json.timeZone !== process.argv[1]) process.exit(1); if (json.week?.monday?.[0]?.start !== '09:00') process.exit(1); if (json.week?.monday?.[1]?.end !== '18:00') process.exit(1);" "${SMOKE_BUSINESS_TIME_ZONE}"
+
+override_status="$(
+  curl -sS -o /tmp/barber-core-api-override.json -w '%{http_code}' \
+    -X PUT "${BASE_URL}/api/v1/professionals/${professional_id}/availability/overrides/${SMOKE_CLOSED_DATE}" \
+    -H "Authorization: Bearer ${admin_token}" \
+    -H 'Content-Type: application/json' \
+    --data '{"mode":"closed"}'
+)"
+if [[ "${override_status}" != "200" ]]; then
+  echo "Expected closed override replacement to return 200, got ${override_status}" >&2
+  cat /tmp/barber-core-api-override.json >&2 || true
+  exit 1
+fi
+node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-override.json', 'utf8')); if (json.date !== process.argv[1]) process.exit(1); if (json.mode !== 'closed') process.exit(1); if (!Array.isArray(json.periods) || json.periods.length !== 0) process.exit(1);" "${SMOKE_CLOSED_DATE}"
+
+resolved_status="$(
+  curl -sS -o /tmp/barber-core-api-resolved.json -w '%{http_code}' \
+    "${BASE_URL}/api/v1/professionals/${professional_id}/availability/resolved?from=${SMOKE_WEEKLY_DATE}&to=${SMOKE_CLOSED_DATE}" \
+    -H "Authorization: Bearer ${barber_token}"
+)"
+if [[ "${resolved_status}" != "200" ]]; then
+  echo "Expected resolved availability read to return 200, got ${resolved_status}" >&2
+  cat /tmp/barber-core-api-resolved.json >&2 || true
+  exit 1
+fi
+node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-resolved.json', 'utf8')); if (json.timeZone !== process.argv[1]) process.exit(1); if (!Array.isArray(json.days) || json.days.length !== 2) process.exit(1); if (json.days[0]?.date !== process.argv[2] || json.days[0]?.source !== 'weekly' || json.days[0]?.periods?.length !== 2) process.exit(1); if (json.days[1]?.date !== process.argv[3] || json.days[1]?.source !== 'override' || json.days[1]?.overrideMode !== 'closed' || json.days[1]?.periods?.length !== 0) process.exit(1);" "${SMOKE_BUSINESS_TIME_ZONE}" "${SMOKE_WEEKLY_DATE}" "${SMOKE_CLOSED_DATE}"
 
 forbidden_status="$(
   curl -sS -o /tmp/barber-core-api-forbidden.json -w '%{http_code}' \
-    -X POST "${BASE_URL}/api/v1/services" \
+    -X PUT "${BASE_URL}/api/v1/professionals/${professional_id}/availability/weekly" \
     -H "Authorization: Bearer ${barber_token}" \
     -H 'Content-Type: application/json' \
-    --data '{"name":"Forbidden Write","durationMinutes":30,"priceCents":4500}'
+    --data '{"week":{"monday":[],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}}'
 )"
 if [[ "${forbidden_status}" != "403" ]]; then
   echo "Expected barber write denial to return 403, got ${forbidden_status}" >&2

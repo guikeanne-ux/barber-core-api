@@ -2,13 +2,14 @@
 
 ## Current scope
 
-This repository currently implements the API foundation, identity integration at the HTTP boundary, and the first business module of the demonstrative vertical slice.
+This repository currently implements the API foundation, identity integration at the HTTP boundary, and the first business modules of the demonstrative vertical slice.
 
 Current modules:
 
 - `system`
 - `auth`
 - `catalog`
+- `availability`
 
 ## Composition
 
@@ -52,6 +53,21 @@ The `catalog` module owns:
 
 Handlers do not talk to Kysely directly. The module stays cohesive on purpose, instead of being split into speculative submodules per entity.
 
+## Availability module
+
+The `availability` module owns:
+
+- weekly availability per professional
+- full-date overrides with `closed` and `custom` modes
+- resolved availability for an inclusive local date range
+- validation of local time and local date inputs
+- the `AvailabilityRepository` persistence boundary
+- the PostgreSQL adapter for availability storage
+
+The module does not own appointments, slots, bookings, or service-duration-aware capacity.
+
+Cross-module collaboration remains narrow on purpose. `availability` does not import `CatalogRepository` or query catalog tables directly through handlers or services. It receives only a small catalog contract that confirms professional existence and returns `{ id }`.
+
 ## Modular monolith rules
 
 Future modules must:
@@ -60,3 +76,4 @@ Future modules must:
 - avoid direct imports of other modules' internal implementations
 - expose only explicit contracts when cross-module collaboration becomes necessary
 - avoid querying `professionals`, `services`, or `professional_services` directly outside `catalog`
+- avoid querying availability tables directly outside `availability`

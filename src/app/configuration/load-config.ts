@@ -8,6 +8,7 @@ import {
   type MigrationConfiguration,
   type NodeEnvironmentSchema,
 } from './configuration-schema.js';
+import { assertValidBusinessTimeZone } from '../../modules/availability/local-date.js';
 
 export const DEFAULT_SHUTDOWN_TIMEOUT_MS = 10_000;
 
@@ -80,6 +81,7 @@ export function loadConfiguration(
     APP_VERSION: env.APP_VERSION,
     SHUTDOWN_TIMEOUT_MS:
       parseInteger('SHUTDOWN_TIMEOUT_MS', env.SHUTDOWN_TIMEOUT_MS) ?? DEFAULT_SHUTDOWN_TIMEOUT_MS,
+    BUSINESS_TIME_ZONE: env.BUSINESS_TIME_ZONE,
     OIDC_ISSUER_URL: env.OIDC_ISSUER_URL,
     OIDC_JWKS_URL: env.OIDC_JWKS_URL,
     OIDC_AUDIENCE: env.OIDC_AUDIENCE,
@@ -106,6 +108,7 @@ export function loadConfiguration(
       validatedCandidate.OIDC_JWKS_URL,
       validatedCandidate.NODE_ENV,
     ),
+    BUSINESS_TIME_ZONE: assertValidBusinessTimeZone(validatedCandidate.BUSINESS_TIME_ZONE),
   };
 
   return Object.freeze(candidate);

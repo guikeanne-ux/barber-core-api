@@ -39,6 +39,7 @@ Current public codes:
 - `VALIDATION_ERROR`
 - `PROFESSIONAL_NOT_FOUND`
 - `SERVICE_NOT_FOUND`
+- `AVAILABILITY_RANGE_TOO_LARGE`
 
 `401` responses include:
 
@@ -58,4 +59,10 @@ Catalog routes keep domain-specific classification narrow:
 
 - `400` only for explicit validation failures
 - `404` only for missing professionals or services
+- `500` for unexpected persistence or application defects
+
+Availability routes follow the same public format:
+
+- `400` for invalid dates, invalid times, overlapping periods, ranges above the documented limits, and malformed payloads
+- `404` only for missing professionals
 - `500` for unexpected persistence or application defects

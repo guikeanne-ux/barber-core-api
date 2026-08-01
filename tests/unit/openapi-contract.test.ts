@@ -12,6 +12,10 @@ interface SchemaObject {
   readonly minProperties?: number;
   readonly properties?: Record<string, SchemaObject>;
   readonly anyOf?: readonly SchemaObject[];
+  readonly oneOf?: readonly SchemaObject[];
+  readonly pattern?: string;
+  readonly maxItems?: number;
+  readonly minItems?: number;
 }
 
 interface OpenApiDocument {
@@ -180,5 +184,41 @@ describe('versioned OpenAPI contract', () => {
       'q',
     );
     expect(nestedServiceListQuery.maxLength).toBe(100);
+
+    const weeklyPut = requireRequestBodySchema(
+      document,
+      '/api/v1/professionals/{professionalId}/availability/weekly',
+      'put',
+    );
+    const weeklyWeek = requireProperty(weeklyPut, 'week');
+    const mondayPeriods = requireProperty(weeklyWeek, 'monday');
+    expect(mondayPeriods.maxItems).toBe(8);
+    expect(mondayPeriods.type).toBe('array');
+    expect(weeklyPut.additionalProperties).toBe(false);
+
+    const overridePut = requireRequestBodySchema(
+      document,
+      '/api/v1/professionals/{professionalId}/availability/overrides/{date}',
+      'put',
+    );
+    expect(requireProperty(overridePut, 'mode')).toBeDefined();
+    expect(requireProperty(overridePut, 'periods').maxItems).toBe(8);
+    expect(requireProperty(overridePut, 'periods').minItems).toBe(1);
+
+    const resolvedFrom = requireQueryParameterSchema(
+      document,
+      '/api/v1/professionals/{professionalId}/availability/resolved',
+      'get',
+      'from',
+    );
+    expect(resolvedFrom.pattern).toBe('^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$');
+
+    const overridesTo = requireQueryParameterSchema(
+      document,
+      '/api/v1/professionals/{professionalId}/availability/overrides',
+      'get',
+      'to',
+    );
+    expect(overridesTo.pattern).toBe('^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$');
   });
 });

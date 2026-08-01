@@ -17,6 +17,7 @@ Key local variables:
 
 - `CORS_ORIGIN=http://localhost:5173`
 - `SHUTDOWN_TIMEOUT_MS=10000`
+- `BUSINESS_TIME_ZONE=America/Sao_Paulo`
 - `OIDC_ISSUER_URL=http://localhost:8080/realms/barber`
 - `OIDC_JWKS_URL=http://localhost:8080/realms/barber/protocol/openid-connect/certs`
 - `OIDC_AUDIENCE=barber-core-api`
@@ -38,13 +39,14 @@ npm run docker:up
 npm run smoke
 ```
 
-The Docker smoke flow starts an ephemeral JWKS fixture on the host during `npm run smoke`. It does not require a real Keycloak container, does not version private keys, and validates authenticated catalog operations against the running API container.
+The Docker smoke flow starts an ephemeral JWKS fixture on the host during `npm run smoke`. It does not require a real Keycloak container, does not version private keys, and validates authenticated availability operations against the running API container.
 
 During the smoke run, the script:
 
 - starts the temporary JWKS fixture on the host at `http://127.0.0.1:18080`
 - recreates only the `api` container with temporary OIDC values pointing to `http://host.docker.internal:18080/realms/barber`
 - confirms the effective `OIDC_ISSUER_URL`, `OIDC_JWKS_URL`, and `OIDC_AUDIENCE` inside the container before the authenticated probe
+- exercises weekly configuration, one `closed` override for `2026-08-04`, and resolved availability across `2026-08-03..2026-08-04`
 
 This temporary OIDC configuration exists only for the smoke execution. To return the API container to the normal local development configuration backed by `barber-identity`, run:
 
@@ -62,6 +64,12 @@ npm run docker:up
 - `GET /api/v1/professionals`
 - `POST /api/v1/services`
 - `GET /api/v1/services`
+- `GET /api/v1/professionals/:professionalId/availability/weekly`
+- `PUT /api/v1/professionals/:professionalId/availability/weekly`
+- `GET /api/v1/professionals/:professionalId/availability/overrides`
+- `PUT /api/v1/professionals/:professionalId/availability/overrides/:date`
+- `DELETE /api/v1/professionals/:professionalId/availability/overrides/:date`
+- `GET /api/v1/professionals/:professionalId/availability/resolved`
 - `GET /docs`
 - `GET /docs/json`
 

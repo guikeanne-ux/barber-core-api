@@ -1,6 +1,6 @@
 # barber-core-api
 
-`barber-core-api` is the main HTTP API of the Barber Platform ecosystem. This repository currently implements the technical foundation, identity integration, route-level authorization, and the first business module: `catalog`.
+`barber-core-api` is the main HTTP API of the Barber Platform ecosystem. This repository currently implements the technical foundation, identity integration, route-level authorization, and the first business modules: `catalog` and `availability`.
 
 ## Scope
 
@@ -12,12 +12,13 @@ This repository currently covers only:
 - local JWT validation through Keycloak JWKS
 - explicit route-level authentication and authorization helpers
 - catalog management for professionals, services, and professional-service capabilities
+- professional weekly availability, date overrides, and resolved availability
 - error, logging, and lifecycle conventions
 - Docker and CI execution
 
 Deliberately out of scope for now:
 
-- availability and scheduling flows
+- scheduling, appointments, reservations, and slots
 - messaging, outbox, RabbitMQ, notifications, or workers
 
 ## What it already provides
@@ -35,6 +36,7 @@ Deliberately out of scope for now:
 - role-based authorization with `admin`, `manager`, `barber`, and `receptionist`
 - authenticated catalog endpoints for professionals and services
 - authenticated capability management between professionals and services
+- authenticated availability endpoints for weekly configuration, overrides, and resolved ranges
 - OpenAPI generation and Swagger UI
 - unit, integration, and Docker smoke tests
 - Docker and GitHub Actions pipeline
@@ -61,6 +63,7 @@ Current modules:
 - `system`
 - `auth`
 - `catalog`
+- `availability`
 
 ## Health endpoints
 
@@ -95,7 +98,10 @@ npm start
 
 ## Migrations
 
-The repository now contains the first production migration for the `catalog` module.
+The repository now contains production migrations for:
+
+- `catalog`
+- `availability`
 
 Useful commands:
 
@@ -126,7 +132,7 @@ npm run docker:logs
 npm run smoke
 ```
 
-`npm run smoke` starts a temporary JWKS fixture on the host, recreates the `api` container with smoke-specific OIDC values that target `host.docker.internal`, validates `/api/v1/auth/me`, and then exercises the catalog flow without requiring a real Keycloak container. No token, private key, or fixture state is versioned.
+`npm run smoke` starts a temporary JWKS fixture on the host, recreates the `api` container with smoke-specific OIDC values that target `host.docker.internal`, validates `/api/v1/auth/me`, and then exercises the availability flow without requiring a real Keycloak container. No token, private key, or fixture state is versioned.
 
 ## OpenAPI
 
@@ -148,7 +154,9 @@ The contract now includes:
 - `bearerAuth` security scheme
 - `GET /api/v1/auth/me`
 - `Professionals` and `Services` tags
+- `Availability` tag
 - protected catalog operations with stable `operationId` values
+- protected availability operations with stable `operationId` values
 - standardized `401`, `403`, and `503` Problem Details for protected routes
 
 ## Graceful shutdown

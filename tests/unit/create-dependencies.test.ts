@@ -4,6 +4,9 @@ const createVerifyAccessTokenMock = vi.fn();
 const createDatabaseConnectionMock = vi.fn();
 const createPostgresCatalogRepositoryMock = vi.fn();
 const createCatalogServiceMock = vi.fn();
+const createFindProfessionalAvailabilityReferenceMock = vi.fn();
+const createPostgresAvailabilityRepositoryMock = vi.fn();
+const createAvailabilityServiceMock = vi.fn();
 const checkDatabaseReadinessMock = vi.fn();
 
 vi.mock('../../src/modules/auth/verify-access-token.js', () => ({
@@ -21,6 +24,15 @@ vi.mock('../../src/modules/catalog/postgres-catalog-repository.js', () => ({
 
 vi.mock('../../src/modules/catalog/catalog-service.js', () => ({
   createCatalogService: createCatalogServiceMock,
+  createFindProfessionalAvailabilityReference: createFindProfessionalAvailabilityReferenceMock,
+}));
+
+vi.mock('../../src/modules/availability/postgres-availability-repository.js', () => ({
+  createPostgresAvailabilityRepository: createPostgresAvailabilityRepositoryMock,
+}));
+
+vi.mock('../../src/modules/availability/availability-service.js', () => ({
+  createAvailabilityService: createAvailabilityServiceMock,
 }));
 
 describe('createDependencies', () => {
@@ -33,11 +45,19 @@ describe('createDependencies', () => {
     const database = { tag: 'database' };
     const catalogRepository = { tag: 'catalog-repository' };
     const catalogService = { tag: 'catalog-service' };
+    const findProfessionalAvailabilityReference = vi.fn();
+    const availabilityRepository = { tag: 'availability-repository' };
+    const availabilityService = { tag: 'availability-service' };
 
     createVerifyAccessTokenMock.mockReturnValue(verifyAccessToken);
     createDatabaseConnectionMock.mockReturnValue(database);
     createPostgresCatalogRepositoryMock.mockReturnValue(catalogRepository);
     createCatalogServiceMock.mockReturnValue(catalogService);
+    createFindProfessionalAvailabilityReferenceMock.mockReturnValue(
+      findProfessionalAvailabilityReference,
+    );
+    createPostgresAvailabilityRepositoryMock.mockReturnValue(availabilityRepository);
+    createAvailabilityServiceMock.mockReturnValue(availabilityService);
     checkDatabaseReadinessMock.mockResolvedValue({ ready: true });
 
     const { createDependencies } = await import('../../src/app/create-dependencies.js');
@@ -51,6 +71,7 @@ describe('createDependencies', () => {
       CORS_ORIGIN: 'http://localhost:5173',
       APP_VERSION: '0.1.0',
       SHUTDOWN_TIMEOUT_MS: 10_000,
+      BUSINESS_TIME_ZONE: 'America/Sao_Paulo',
       OIDC_ISSUER_URL: 'http://localhost:8080/realms/barber',
       OIDC_JWKS_URL: 'http://localhost:8080/realms/barber/protocol/openid-connect/certs',
       OIDC_AUDIENCE: 'barber-core-api',
@@ -66,7 +87,15 @@ describe('createDependencies', () => {
     });
     expect(dependencies.verifyAccessToken).toBe(verifyAccessToken);
     expect(dependencies.catalogService).toBe(catalogService);
+    expect(dependencies.availabilityService).toBe(availabilityService);
     expect(createPostgresCatalogRepositoryMock).toHaveBeenCalledWith(database);
     expect(createCatalogServiceMock).toHaveBeenCalledWith(catalogRepository);
+    expect(createFindProfessionalAvailabilityReferenceMock).toHaveBeenCalledWith(catalogRepository);
+    expect(createPostgresAvailabilityRepositoryMock).toHaveBeenCalledWith(database);
+    expect(createAvailabilityServiceMock).toHaveBeenCalledWith({
+      repository: availabilityRepository,
+      findProfessionalAvailabilityReference,
+      businessTimeZone: configuration.BUSINESS_TIME_ZONE,
+    });
   });
 });

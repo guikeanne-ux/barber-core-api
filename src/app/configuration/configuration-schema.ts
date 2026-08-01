@@ -31,6 +31,7 @@ export const HttpConfigurationSchema = Type.Object({
   CORS_ORIGIN: Type.String({ minLength: 1 }),
   APP_VERSION: Type.String({ minLength: 1 }),
   SHUTDOWN_TIMEOUT_MS: Type.Integer({ minimum: 1, maximum: 120000 }),
+  BUSINESS_TIME_ZONE: Type.String({ minLength: 1 }),
 });
 
 export const OidcConfigurationSchema = Type.Object({

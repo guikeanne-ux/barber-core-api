@@ -2260,6 +2260,3343 @@
         ]
       }
     },
+    "/api/v1/professionals/{professionalId}/availability/overrides": {
+      "get": {
+        "description": "Allowed roles: admin, manager, barber, receptionist. Range is inclusive and limited to 366 dates.",
+        "operationId": "listProfessionalAvailabilityOverrides",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "professionalId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "from": {
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                      "type": "string"
+                    },
+                    "items": {
+                      "items": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "createdAt": {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "date": {
+                                "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                                "type": "string"
+                              },
+                              "mode": {
+                                "enum": [
+                                  "closed"
+                                ],
+                                "type": "string"
+                              },
+                              "periods": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "end": {
+                                      "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                      "type": "string"
+                                    },
+                                    "start": {
+                                      "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "start",
+                                    "end"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 0,
+                                "type": "array"
+                              },
+                              "professionalId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "updatedAt": {
+                                "format": "date-time",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "professionalId",
+                              "date",
+                              "mode",
+                              "periods",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "createdAt": {
+                                "format": "date-time",
+                                "type": "string"
+                              },
+                              "date": {
+                                "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                                "type": "string"
+                              },
+                              "mode": {
+                                "enum": [
+                                  "custom"
+                                ],
+                                "type": "string"
+                              },
+                              "periods": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "end": {
+                                      "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                      "type": "string"
+                                    },
+                                    "start": {
+                                      "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "start",
+                                    "end"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 8,
+                                "minItems": 1,
+                                "type": "array"
+                              },
+                              "professionalId": {
+                                "format": "uuid",
+                                "type": "string"
+                              },
+                              "updatedAt": {
+                                "format": "date-time",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "professionalId",
+                              "date",
+                              "mode",
+                              "periods",
+                              "createdAt",
+                              "updatedAt"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "professionalId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "timeZone": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "to": {
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "professionalId",
+                    "timeZone",
+                    "from",
+                    "to",
+                    "items"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Lists date overrides for one professional.",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/professionals/{professionalId}/availability/overrides/{date}": {
+      "delete": {
+        "description": "Allowed roles: admin, manager.",
+        "operationId": "deleteProfessionalAvailabilityOverride",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "professionalId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Deletes a date availability override for one professional.",
+        "tags": [
+          "Availability"
+        ]
+      },
+      "put": {
+        "description": "Allowed roles: admin, manager. closed removes all periods for the date; custom replaces the date with explicit local periods.",
+        "operationId": "upsertProfessionalAvailabilityOverride",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "professionalId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "anyOf": [
+                      {
+                        "enum": [
+                          "closed"
+                        ],
+                        "type": "string"
+                      },
+                      {
+                        "enum": [
+                          "custom"
+                        ],
+                        "type": "string"
+                      }
+                    ]
+                  },
+                  "periods": {
+                    "items": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "end": {
+                          "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                          "type": "string"
+                        },
+                        "start": {
+                          "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "start",
+                        "end"
+                      ],
+                      "type": "object"
+                    },
+                    "maxItems": 8,
+                    "minItems": 1,
+                    "type": "array"
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "date": {
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                          "type": "string"
+                        },
+                        "mode": {
+                          "enum": [
+                            "closed"
+                          ],
+                          "type": "string"
+                        },
+                        "periods": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 0,
+                          "type": "array"
+                        },
+                        "professionalId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "professionalId",
+                        "date",
+                        "mode",
+                        "periods",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "type": "object"
+                    },
+                    {
+                      "additionalProperties": false,
+                      "properties": {
+                        "createdAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        },
+                        "date": {
+                          "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                          "type": "string"
+                        },
+                        "mode": {
+                          "enum": [
+                            "custom"
+                          ],
+                          "type": "string"
+                        },
+                        "periods": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "minItems": 1,
+                          "type": "array"
+                        },
+                        "professionalId": {
+                          "format": "uuid",
+                          "type": "string"
+                        },
+                        "updatedAt": {
+                          "format": "date-time",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "professionalId",
+                        "date",
+                        "mode",
+                        "periods",
+                        "createdAt",
+                        "updatedAt"
+                      ],
+                      "type": "object"
+                    }
+                  ]
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Creates or replaces a date availability override for one professional.",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/professionals/{professionalId}/availability/resolved": {
+      "get": {
+        "description": "Allowed roles: admin, manager, barber, receptionist. Range is inclusive and limited to 31 dates.",
+        "operationId": "resolveProfessionalAvailability",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "from",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "to",
+            "required": true,
+            "schema": {
+              "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "professionalId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "days": {
+                      "items": {
+                        "anyOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "date": {
+                                "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                                "type": "string"
+                              },
+                              "periods": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "end": {
+                                      "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                      "type": "string"
+                                    },
+                                    "start": {
+                                      "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "start",
+                                    "end"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 8,
+                                "type": "array"
+                              },
+                              "source": {
+                                "enum": [
+                                  "weekly"
+                                ],
+                                "type": "string"
+                              },
+                              "weekday": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "monday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "tuesday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "wednesday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "thursday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "friday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "saturday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "sunday"
+                                    ],
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "date",
+                              "weekday",
+                              "source",
+                              "periods"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "date": {
+                                "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                                "type": "string"
+                              },
+                              "overrideMode": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "closed"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "custom"
+                                    ],
+                                    "type": "string"
+                                  }
+                                ]
+                              },
+                              "periods": {
+                                "items": {
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "end": {
+                                      "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                      "type": "string"
+                                    },
+                                    "start": {
+                                      "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "start",
+                                    "end"
+                                  ],
+                                  "type": "object"
+                                },
+                                "maxItems": 8,
+                                "type": "array"
+                              },
+                              "source": {
+                                "enum": [
+                                  "override"
+                                ],
+                                "type": "string"
+                              },
+                              "weekday": {
+                                "anyOf": [
+                                  {
+                                    "enum": [
+                                      "monday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "tuesday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "wednesday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "thursday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "friday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "saturday"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  {
+                                    "enum": [
+                                      "sunday"
+                                    ],
+                                    "type": "string"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "date",
+                              "weekday",
+                              "source",
+                              "overrideMode",
+                              "periods"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "type": "array"
+                    },
+                    "from": {
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                      "type": "string"
+                    },
+                    "professionalId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "timeZone": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "to": {
+                      "pattern": "^\\d{4}-(0[1-9]|1[0-2])-([0-2]\\d|3[01])$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "professionalId",
+                    "timeZone",
+                    "from",
+                    "to",
+                    "days"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Resolves configured weekly availability plus overrides for a date range.",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
+    "/api/v1/professionals/{professionalId}/availability/weekly": {
+      "get": {
+        "description": "Allowed roles: admin, manager, barber, receptionist.",
+        "operationId": "getProfessionalWeeklyAvailability",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "professionalId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "professionalId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "timeZone": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "week": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "friday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "monday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "saturday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "sunday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "thursday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "tuesday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "wednesday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "professionalId",
+                    "timeZone",
+                    "week"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Returns the weekly availability configuration of one professional.",
+        "tags": [
+          "Availability"
+        ]
+      },
+      "put": {
+        "description": "Allowed roles: admin, manager. Periods are local half-open intervals [start, end). End may be 24:00.",
+        "operationId": "replaceProfessionalWeeklyAvailability",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "professionalId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "additionalProperties": false,
+                "properties": {
+                  "week": {
+                    "additionalProperties": false,
+                    "properties": {
+                      "friday": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end": {
+                              "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                              "type": "string"
+                            },
+                            "start": {
+                              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 8,
+                        "type": "array"
+                      },
+                      "monday": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end": {
+                              "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                              "type": "string"
+                            },
+                            "start": {
+                              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 8,
+                        "type": "array"
+                      },
+                      "saturday": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end": {
+                              "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                              "type": "string"
+                            },
+                            "start": {
+                              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 8,
+                        "type": "array"
+                      },
+                      "sunday": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end": {
+                              "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                              "type": "string"
+                            },
+                            "start": {
+                              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 8,
+                        "type": "array"
+                      },
+                      "thursday": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end": {
+                              "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                              "type": "string"
+                            },
+                            "start": {
+                              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 8,
+                        "type": "array"
+                      },
+                      "tuesday": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end": {
+                              "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                              "type": "string"
+                            },
+                            "start": {
+                              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 8,
+                        "type": "array"
+                      },
+                      "wednesday": {
+                        "items": {
+                          "additionalProperties": false,
+                          "properties": {
+                            "end": {
+                              "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                              "type": "string"
+                            },
+                            "start": {
+                              "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "start",
+                            "end"
+                          ],
+                          "type": "object"
+                        },
+                        "maxItems": 8,
+                        "type": "array"
+                      }
+                    },
+                    "required": [
+                      "monday",
+                      "tuesday",
+                      "wednesday",
+                      "thursday",
+                      "friday",
+                      "saturday",
+                      "sunday"
+                    ],
+                    "type": "object"
+                  }
+                },
+                "required": [
+                  "week"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "professionalId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "timeZone": {
+                      "minLength": 1,
+                      "type": "string"
+                    },
+                    "updatedAt": {
+                      "format": "date-time",
+                      "type": "string"
+                    },
+                    "week": {
+                      "additionalProperties": false,
+                      "properties": {
+                        "friday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "monday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "saturday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "sunday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "thursday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "tuesday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        },
+                        "wednesday": {
+                          "items": {
+                            "additionalProperties": false,
+                            "properties": {
+                              "end": {
+                                "pattern": "^(?:(?:[01]\\d|2[0-3]):[0-5]\\d|24:00)$",
+                                "type": "string"
+                              },
+                              "start": {
+                                "pattern": "^(?:[01]\\d|2[0-3]):[0-5]\\d$",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "start",
+                              "end"
+                            ],
+                            "type": "object"
+                          },
+                          "maxItems": 8,
+                          "type": "array"
+                        }
+                      },
+                      "required": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "professionalId",
+                    "timeZone",
+                    "week"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "400": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "type": "string"
+                    },
+                    "detail": {
+                      "type": "string"
+                    },
+                    "errors": {
+                      "items": {
+                        "properties": {
+                          "code": {
+                            "type": "string"
+                          },
+                          "field": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "field",
+                          "message"
+                        ],
+                        "type": "object"
+                      },
+                      "type": "array"
+                    },
+                    "instance": {
+                      "type": "string"
+                    },
+                    "requestId": {
+                      "format": "uuid",
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "integer"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "title",
+                    "status",
+                    "detail",
+                    "instance",
+                    "code",
+                    "requestId"
+                  ],
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Default Response"
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "summary": "Replaces the full weekly availability configuration of one professional.",
+        "tags": [
+          "Availability"
+        ]
+      }
+    },
     "/api/v1/professionals/{professionalId}/deactivate": {
       "post": {
         "description": "Allowed roles: admin, manager.",
@@ -6695,6 +10032,10 @@
     {
       "description": "Authentication and authorization technical endpoints",
       "name": "Auth"
+    },
+    {
+      "description": "Weekly availability, date overrides, and resolved availability endpoints",
+      "name": "Availability"
     }
   ]
 }

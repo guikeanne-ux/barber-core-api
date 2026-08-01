@@ -7,6 +7,7 @@ import fastifySwaggerUi from '@fastify/swagger-ui';
 
 import type { ApplicationConfiguration } from '../configuration/configuration-schema.js';
 import { AuthenticationProblem } from '../../modules/auth/authentication-errors.js';
+import { AvailabilityProblem } from '../../modules/availability/availability-errors.js';
 import { CatalogProblem } from '../../modules/catalog/catalog-errors.js';
 import {
   createProblemDetails,
@@ -64,6 +65,10 @@ export async function registerCorePlugins(
         {
           name: 'Auth',
           description: 'Authentication and authorization technical endpoints',
+        },
+        {
+          name: 'Availability',
+          description: 'Weekly availability, date overrides, and resolved availability endpoints',
         },
       ],
       components: {
@@ -174,6 +179,22 @@ export async function registerCorePlugins(
     }
 
     if (error instanceof CatalogProblem) {
+      return reply
+        .code(error.statusCode)
+        .type('application/problem+json')
+        .send(
+          createProblemDetails(request, {
+            type: error.type,
+            title: error.statusCode === 404 ? 'Not Found' : 'Invalid Request',
+            status: error.statusCode,
+            detail: error.detail,
+            code: error.code,
+            ...(error.errors ? { errors: [...error.errors] } : {}),
+          }),
+        );
+    }
+
+    if (error instanceof AvailabilityProblem) {
       return reply
         .code(error.statusCode)
         .type('application/problem+json')

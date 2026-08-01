@@ -5,6 +5,7 @@ import type { BuiltApplication, ApplicationDependencies } from './application-ty
 import { registerCorePlugins } from './plugins/register-plugins.js';
 import { authRoutes } from '../modules/auth/routes.js';
 import { registerCatalogModule } from '../modules/catalog/register-catalog-module.js';
+import { registerAvailabilityModule } from '../modules/availability/register-availability-module.js';
 import { resolveRequestId } from '../shared/http/request-id.js';
 import { systemRoutes } from '../modules/system/system-routes.js';
 
@@ -56,6 +57,10 @@ export async function buildApplication(
   await app.register(registerCatalogModule, {
     verifyAccessToken: dependencies.verifyAccessToken,
     catalogService: dependencies.catalogService,
+  });
+  await app.register(registerAvailabilityModule, {
+    verifyAccessToken: dependencies.verifyAccessToken,
+    availabilityService: dependencies.availabilityService,
   });
   await app.register(systemRoutes, {
     configuration: dependencies.configuration,

@@ -63,6 +63,14 @@ export interface CatalogService {
   ): Promise<PaginatedResult<BarberService>>;
 }
 
+export interface ProfessionalAvailabilityReference {
+  readonly id: string;
+}
+
+export type FindProfessionalAvailabilityReference = (
+  professionalId: string,
+) => Promise<ProfessionalAvailabilityReference | null>;
+
 function toFieldError(field: string, message: string, code = 'invalid'): ProblemFieldError {
   return { field, message, code };
 }
@@ -366,4 +374,11 @@ export function createCatalogService(repository: CatalogRepository): CatalogServ
       return repository.listServicesByProfessional(professionalId, normalizeListInput(input));
     },
   };
+}
+
+export function createFindProfessionalAvailabilityReference(
+  repository: Pick<CatalogRepository, 'ensureProfessionalExists'>,
+): FindProfessionalAvailabilityReference {
+  return async (professionalId) =>
+    (await repository.ensureProfessionalExists(professionalId)) ? { id: professionalId } : null;
 }

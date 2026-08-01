@@ -10,11 +10,15 @@ The API uses:
 
 ## Migrations
 
-The first production migration creates the catalog tables:
+Production migrations currently create these tables:
 
 - `professionals`
 - `services`
 - `professional_services`
+- `professional_availability_profiles`
+- `professional_weekly_periods`
+- `professional_availability_overrides`
+- `professional_availability_override_periods`
 
 Current schema characteristics:
 
@@ -23,6 +27,12 @@ Current schema characteristics:
 - PostgreSQL-managed timestamps with `now()`
 - composite primary key on `professional_services`
 - restrictive foreign keys without cascade delete
+- restrictive foreign key from `professional_availability_profiles.professional_id` to `professionals(id)`
+- internal availability foreign keys use cascades only within the availability aggregate
+- weekly periods use ISO weekdays `1..7`
+- time periods are stored as start and end minutes since start of day
+- `weekly_updated_at` remains nullable until the first explicit weekly configuration write
 - deterministic indexes for `status + name + id` and `name + id`
+- deterministic indexes for weekly and override range reads
 
-Integration tests validate both the production catalog migration and the generic migrator behavior against disposable PostgreSQL instances started by Testcontainers.
+Integration tests validate the production migrations, availability constraints, and the generic migrator behavior against disposable PostgreSQL instances started by Testcontainers.

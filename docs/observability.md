@@ -43,6 +43,12 @@ Catalog request logs should also avoid recording:
 - full `description`
 - service prices
 
+Availability request logs should also avoid recording:
+
+- full weekly payloads
+- full override period arrays
+- unnecessary repetition of date-range query payloads
+
 ## Auth result categories
 
 Protected-route failures are logged with sanitized categories such as:
