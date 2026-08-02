@@ -5,6 +5,7 @@ import type { DatabaseConnection } from '../shared/database/database.js';
 import type { VerifyAccessToken } from '../modules/auth/verify-access-token.js';
 import type { CatalogService } from '../modules/catalog/catalog-service.js';
 import type { AvailabilityService } from '../modules/availability/availability-service.js';
+import type { AppointmentService } from '../modules/appointments/appointment-service.js';
 
 export type ReadinessProbeResult = { ready: true } | { ready: false; reason: string };
 export type ReadinessProbe = () => Promise<ReadinessProbeResult>;
@@ -16,6 +17,7 @@ export interface ApplicationDependencies {
   readonly verifyAccessToken: VerifyAccessToken;
   readonly catalogService: CatalogService;
   readonly availabilityService: AvailabilityService;
+  readonly appointmentService: AppointmentService;
 }
 
 export interface BuiltApplication {

@@ -4,9 +4,13 @@ const createVerifyAccessTokenMock = vi.fn();
 const createDatabaseConnectionMock = vi.fn();
 const createPostgresCatalogRepositoryMock = vi.fn();
 const createCatalogServiceMock = vi.fn();
+const createFindAppointmentCatalogReferenceMock = vi.fn();
 const createFindProfessionalAvailabilityReferenceMock = vi.fn();
 const createPostgresAvailabilityRepositoryMock = vi.fn();
 const createAvailabilityServiceMock = vi.fn();
+const createResolveAvailabilityForAppointmentMock = vi.fn();
+const createPostgresAppointmentRepositoryMock = vi.fn();
+const createAppointmentServiceMock = vi.fn();
 const checkDatabaseReadinessMock = vi.fn();
 
 vi.mock('../../src/modules/auth/verify-access-token.js', () => ({
@@ -24,6 +28,7 @@ vi.mock('../../src/modules/catalog/postgres-catalog-repository.js', () => ({
 
 vi.mock('../../src/modules/catalog/catalog-service.js', () => ({
   createCatalogService: createCatalogServiceMock,
+  createFindAppointmentCatalogReference: createFindAppointmentCatalogReferenceMock,
   createFindProfessionalAvailabilityReference: createFindProfessionalAvailabilityReferenceMock,
 }));
 
@@ -33,6 +38,15 @@ vi.mock('../../src/modules/availability/postgres-availability-repository.js', ()
 
 vi.mock('../../src/modules/availability/availability-service.js', () => ({
   createAvailabilityService: createAvailabilityServiceMock,
+  createResolveAvailabilityForAppointment: createResolveAvailabilityForAppointmentMock,
+}));
+
+vi.mock('../../src/modules/appointments/postgres-appointment-repository.js', () => ({
+  createPostgresAppointmentRepository: createPostgresAppointmentRepositoryMock,
+}));
+
+vi.mock('../../src/modules/appointments/appointment-service.js', () => ({
+  createAppointmentService: createAppointmentServiceMock,
 }));
 
 describe('createDependencies', () => {
@@ -45,19 +59,27 @@ describe('createDependencies', () => {
     const database = { tag: 'database' };
     const catalogRepository = { tag: 'catalog-repository' };
     const catalogService = { tag: 'catalog-service' };
+    const findAppointmentCatalogReference = vi.fn();
     const findProfessionalAvailabilityReference = vi.fn();
     const availabilityRepository = { tag: 'availability-repository' };
     const availabilityService = { tag: 'availability-service' };
+    const resolveAvailabilityForAppointment = vi.fn();
+    const appointmentRepository = { tag: 'appointment-repository' };
+    const appointmentService = { tag: 'appointment-service' };
 
     createVerifyAccessTokenMock.mockReturnValue(verifyAccessToken);
     createDatabaseConnectionMock.mockReturnValue(database);
     createPostgresCatalogRepositoryMock.mockReturnValue(catalogRepository);
     createCatalogServiceMock.mockReturnValue(catalogService);
+    createFindAppointmentCatalogReferenceMock.mockReturnValue(findAppointmentCatalogReference);
     createFindProfessionalAvailabilityReferenceMock.mockReturnValue(
       findProfessionalAvailabilityReference,
     );
     createPostgresAvailabilityRepositoryMock.mockReturnValue(availabilityRepository);
     createAvailabilityServiceMock.mockReturnValue(availabilityService);
+    createResolveAvailabilityForAppointmentMock.mockReturnValue(resolveAvailabilityForAppointment);
+    createPostgresAppointmentRepositoryMock.mockReturnValue(appointmentRepository);
+    createAppointmentServiceMock.mockReturnValue(appointmentService);
     checkDatabaseReadinessMock.mockResolvedValue({ ready: true });
 
     const { createDependencies } = await import('../../src/app/create-dependencies.js');
@@ -88,13 +110,23 @@ describe('createDependencies', () => {
     expect(dependencies.verifyAccessToken).toBe(verifyAccessToken);
     expect(dependencies.catalogService).toBe(catalogService);
     expect(dependencies.availabilityService).toBe(availabilityService);
+    expect(dependencies.appointmentService).toBe(appointmentService);
     expect(createPostgresCatalogRepositoryMock).toHaveBeenCalledWith(database);
     expect(createCatalogServiceMock).toHaveBeenCalledWith(catalogRepository);
+    expect(createFindAppointmentCatalogReferenceMock).toHaveBeenCalledWith(catalogRepository);
     expect(createFindProfessionalAvailabilityReferenceMock).toHaveBeenCalledWith(catalogRepository);
     expect(createPostgresAvailabilityRepositoryMock).toHaveBeenCalledWith(database);
     expect(createAvailabilityServiceMock).toHaveBeenCalledWith({
       repository: availabilityRepository,
       findProfessionalAvailabilityReference,
+      businessTimeZone: configuration.BUSINESS_TIME_ZONE,
+    });
+    expect(createResolveAvailabilityForAppointmentMock).toHaveBeenCalledWith(availabilityService);
+    expect(createPostgresAppointmentRepositoryMock).toHaveBeenCalledWith(database);
+    expect(createAppointmentServiceMock).toHaveBeenCalledWith({
+      repository: appointmentRepository,
+      findAppointmentCatalogReference,
+      resolveAvailabilityForAppointment,
       businessTimeZone: configuration.BUSINESS_TIME_ZONE,
     });
   });

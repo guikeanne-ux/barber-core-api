@@ -30,4 +30,20 @@ export interface CatalogRepository {
     professionalId: string,
     input: CatalogListInput,
   ): Promise<PaginatedResult<BarberService>>;
+  getAppointmentCatalogReference(input: { professionalId: string; serviceId: string }): Promise<{
+    professional?: {
+      id: string;
+      name: string;
+      status: ProfessionalStatus;
+    };
+    service?: {
+      id: string;
+      name: string;
+      status: ServiceStatus;
+      durationMinutes: number;
+      priceCents: number;
+      currency: 'BRL';
+    };
+    professionalCanPerformService: boolean;
+  }>;
 }

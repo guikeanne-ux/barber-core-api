@@ -51,6 +51,19 @@ export interface AvailabilityService {
   ): Promise<ResolvedAvailability>;
 }
 
+export type ResolveAvailabilityForAppointment = (
+  professionalId: string,
+  date: string,
+) => Promise<{
+  professionalId: string;
+  date: string;
+  timeZone: string;
+  periods: {
+    start: string;
+    end: string;
+  }[];
+}>;
+
 function toFieldError(field: string, message: string, code = 'invalid') {
   return { field, message, code };
 }
@@ -324,5 +337,27 @@ export function createAvailabilityService(input: {
         days,
       };
     },
+  };
+}
+
+export function createResolveAvailabilityForAppointment(
+  availabilityService: Pick<AvailabilityService, 'resolveAvailability'>,
+): ResolveAvailabilityForAppointment {
+  return async (professionalId, date) => {
+    const resolved = await availabilityService.resolveAvailability(professionalId, {
+      from: date,
+      to: date,
+    });
+    const day = resolved.days[0];
+    if (!day) {
+      throw new Error('Resolved availability did not return the requested day.');
+    }
+
+    return {
+      professionalId,
+      date,
+      timeZone: resolved.timeZone,
+      periods: [...day.periods],
+    };
   };
 }

@@ -6,6 +6,7 @@ import { registerCorePlugins } from './plugins/register-plugins.js';
 import { authRoutes } from '../modules/auth/routes.js';
 import { registerCatalogModule } from '../modules/catalog/register-catalog-module.js';
 import { registerAvailabilityModule } from '../modules/availability/register-availability-module.js';
+import { registerAppointmentsModule } from '../modules/appointments/register-appointments-module.js';
 import { resolveRequestId } from '../shared/http/request-id.js';
 import { systemRoutes } from '../modules/system/system-routes.js';
 
@@ -61,6 +62,10 @@ export async function buildApplication(
   await app.register(registerAvailabilityModule, {
     verifyAccessToken: dependencies.verifyAccessToken,
     availabilityService: dependencies.availabilityService,
+  });
+  await app.register(registerAppointmentsModule, {
+    verifyAccessToken: dependencies.verifyAccessToken,
+    appointmentService: dependencies.appointmentService,
   });
   await app.register(systemRoutes, {
     configuration: dependencies.configuration,

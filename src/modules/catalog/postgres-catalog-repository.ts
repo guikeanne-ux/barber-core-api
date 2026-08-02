@@ -326,5 +326,51 @@ export function createPostgresCatalogRepository(connection: DatabaseConnection):
         totalItems,
       };
     },
+
+    async getAppointmentCatalogReference(input) {
+      const professional = await db
+        .selectFrom('professionals')
+        .select(['id', 'name', 'status'])
+        .where('id', '=', input.professionalId)
+        .executeTakeFirst();
+
+      const service = await db
+        .selectFrom('services')
+        .select(['id', 'name', 'status', 'duration_minutes', 'price_cents'])
+        .where('id', '=', input.serviceId)
+        .executeTakeFirst();
+
+      const capability = await db
+        .selectFrom('professional_services')
+        .select('professional_id')
+        .where('professional_id', '=', input.professionalId)
+        .where('service_id', '=', input.serviceId)
+        .executeTakeFirst();
+
+      return {
+        ...(professional
+          ? {
+              professional: {
+                id: professional.id,
+                name: professional.name,
+                status: professional.status,
+              },
+            }
+          : {}),
+        ...(service
+          ? {
+              service: {
+                id: service.id,
+                name: service.name,
+                status: service.status,
+                durationMinutes: service.duration_minutes,
+                priceCents: service.price_cents,
+                currency: 'BRL' as const,
+              },
+            }
+          : {}),
+        professionalCanPerformService: capability !== undefined,
+      };
+    },
   };
 }

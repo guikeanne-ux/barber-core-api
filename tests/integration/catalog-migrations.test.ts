@@ -36,8 +36,12 @@ describe('production migrations', () => {
       });
 
       expect(migrated.error).toBeUndefined();
-      expect(migrated.results.at(-1)?.migrationName).toBe(
-        '20260801003000_create_professional_availability_tables',
+      expect(migrated.results.map((result) => result.migrationName)).toEqual(
+        expect.arrayContaining([
+          '20260731193000_create_catalog_tables',
+          '20260801003000_create_professional_availability_tables',
+          '20260802000000_create_appointments_table',
+        ]),
       );
 
       const tables = await sql<{ table_name: string }>`
@@ -308,12 +312,27 @@ describe('production migrations', () => {
         `.execute(connection.db),
       ).rejects.toThrow();
 
-      const rolledBack = await rollbackMigration({
+      const rolledBackAppointments = await rollbackMigration({
         connection,
         migrationsPath: productionMigrationsPath,
       });
 
-      expect(rolledBack.error).toBeUndefined();
+      expect(rolledBackAppointments.error).toBeUndefined();
+
+      const appointmentsAfterRollback = await sql<{ table_name: string }>`
+        select table_name
+        from information_schema.tables
+        where table_schema = 'public'
+          and table_name = 'appointments'
+      `.execute(connection.db);
+      expect(appointmentsAfterRollback.rows).toHaveLength(0);
+
+      const rolledBackAvailability = await rollbackMigration({
+        connection,
+        migrationsPath: productionMigrationsPath,
+      });
+
+      expect(rolledBackAvailability.error).toBeUndefined();
 
       const afterRollback = await sql<{ table_name: string }>`
         select table_name

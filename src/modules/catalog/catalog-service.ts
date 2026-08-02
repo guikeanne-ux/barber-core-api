@@ -71,6 +71,26 @@ export type FindProfessionalAvailabilityReference = (
   professionalId: string,
 ) => Promise<ProfessionalAvailabilityReference | null>;
 
+export type FindAppointmentCatalogReference = (
+  professionalId: string,
+  serviceId: string,
+) => Promise<{
+  professional?: {
+    id: string;
+    name: string;
+    status: 'active' | 'inactive';
+  };
+  service?: {
+    id: string;
+    name: string;
+    status: 'active' | 'inactive';
+    durationMinutes: number;
+    priceCents: number;
+    currency: 'BRL';
+  };
+  professionalCanPerformService: boolean;
+}>;
+
 function toFieldError(field: string, message: string, code = 'invalid'): ProblemFieldError {
   return { field, message, code };
 }
@@ -381,4 +401,14 @@ export function createFindProfessionalAvailabilityReference(
 ): FindProfessionalAvailabilityReference {
   return async (professionalId) =>
     (await repository.ensureProfessionalExists(professionalId)) ? { id: professionalId } : null;
+}
+
+export function createFindAppointmentCatalogReference(
+  repository: Pick<CatalogRepository, 'getAppointmentCatalogReference'>,
+): FindAppointmentCatalogReference {
+  return (professionalId, serviceId) =>
+    repository.getAppointmentCatalogReference({
+      professionalId,
+      serviceId,
+    });
 }

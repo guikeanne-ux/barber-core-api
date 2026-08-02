@@ -52,6 +52,7 @@ function createRepositoryStub(): CatalogRepository {
     upsertProfessionalService: vi.fn(),
     removeProfessionalService: vi.fn(),
     listServicesByProfessional: vi.fn(),
+    getAppointmentCatalogReference: vi.fn(),
   };
 }
 

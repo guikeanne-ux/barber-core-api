@@ -35,11 +35,18 @@ cleanup() {
     /tmp/barber-core-api-jwks-health.log \
     /tmp/barber-core-api-jwks-fetch.log \
     /tmp/barber-core-api-professional.json \
+    /tmp/barber-core-api-service.json \
     /tmp/barber-core-api-weekly.json \
     /tmp/barber-core-api-weekly-read.json \
     /tmp/barber-core-api-override.json \
     /tmp/barber-core-api-resolved.json \
-    /tmp/barber-core-api-forbidden.json
+    /tmp/barber-core-api-appointment.json \
+    /tmp/barber-core-api-appointment-read.json \
+    /tmp/barber-core-api-appointment-conflict.json \
+    /tmp/barber-core-api-appointment-cancel.json \
+    /tmp/barber-core-api-appointment-rebook.json \
+    /tmp/barber-core-api-forbidden.json \
+    /tmp/barber-core-api-appointment-forbidden.json
 }
 
 trap cleanup EXIT INT TERM
@@ -237,6 +244,32 @@ fi
 
 professional_id="$(node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-professional.json', 'utf8')); if (!json.id) process.exit(1); process.stdout.write(json.id);")"
 
+service_status="$(
+  curl -sS -o /tmp/barber-core-api-service.json -w '%{http_code}' \
+    -X POST "${BASE_URL}/api/v1/services" \
+    -H "Authorization: Bearer ${admin_token}" \
+    -H 'Content-Type: application/json' \
+    --data '{"name":"Smoke Cut","durationMinutes":30,"priceCents":4500}'
+)"
+if [[ "${service_status}" != "201" ]]; then
+  echo "Expected authenticated service creation to return 201, got ${service_status}" >&2
+  cat /tmp/barber-core-api-service.json >&2 || true
+  exit 1
+fi
+
+service_id="$(node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-service.json', 'utf8')); if (!json.id) process.exit(1); process.stdout.write(json.id);")"
+
+capability_status="$(
+  curl -sS -o /tmp/barber-core-api-service.json -w '%{http_code}' \
+    -X PUT "${BASE_URL}/api/v1/professionals/${professional_id}/services/${service_id}" \
+    -H "Authorization: Bearer ${admin_token}"
+)"
+if [[ "${capability_status}" != "204" ]]; then
+  echo "Expected service capability upsert to return 204, got ${capability_status}" >&2
+  cat /tmp/barber-core-api-service.json >&2 || true
+  exit 1
+fi
+
 weekly_status="$(
   curl -sS -o /tmp/barber-core-api-weekly.json -w '%{http_code}' \
     -X PUT "${BASE_URL}/api/v1/professionals/${professional_id}/availability/weekly" \
@@ -289,6 +322,72 @@ if [[ "${resolved_status}" != "200" ]]; then
 fi
 node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-resolved.json', 'utf8')); if (json.timeZone !== process.argv[1]) process.exit(1); if (!Array.isArray(json.days) || json.days.length !== 2) process.exit(1); if (json.days[0]?.date !== process.argv[2] || json.days[0]?.source !== 'weekly' || json.days[0]?.periods?.length !== 2) process.exit(1); if (json.days[1]?.date !== process.argv[3] || json.days[1]?.source !== 'override' || json.days[1]?.overrideMode !== 'closed' || json.days[1]?.periods?.length !== 0) process.exit(1);" "${SMOKE_BUSINESS_TIME_ZONE}" "${SMOKE_WEEKLY_DATE}" "${SMOKE_CLOSED_DATE}"
 
+appointment_status="$(
+  curl -sS -o /tmp/barber-core-api-appointment.json -w '%{http_code}' \
+    -X POST "${BASE_URL}/api/v1/appointments" \
+    -H "Authorization: Bearer ${admin_token}" \
+    -H 'Content-Type: application/json' \
+    --data "{\"professionalId\":\"${professional_id}\",\"serviceId\":\"${service_id}\",\"date\":\"${SMOKE_WEEKLY_DATE}\",\"start\":\"09:00\",\"customerName\":\"Smoke Customer\",\"customerPhone\":\"+5548999999999\",\"notes\":\"Smoke booking\"}"
+)"
+if [[ "${appointment_status}" != "201" ]]; then
+  echo "Expected appointment creation to return 201, got ${appointment_status}" >&2
+  cat /tmp/barber-core-api-appointment.json >&2 || true
+  exit 1
+fi
+appointment_id="$(node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-appointment.json', 'utf8')); if (!json.id) process.exit(1); if (json.end !== '09:30') process.exit(1); process.stdout.write(json.id);")"
+
+appointment_read_status="$(
+  curl -sS -o /tmp/barber-core-api-appointment-read.json -w '%{http_code}' \
+    "${BASE_URL}/api/v1/appointments/${appointment_id}" \
+    -H "Authorization: Bearer ${barber_token}"
+)"
+if [[ "${appointment_read_status}" != "200" ]]; then
+  echo "Expected appointment read to return 200, got ${appointment_read_status}" >&2
+  cat /tmp/barber-core-api-appointment-read.json >&2 || true
+  exit 1
+fi
+
+appointment_conflict_status="$(
+  curl -sS -o /tmp/barber-core-api-appointment-conflict.json -w '%{http_code}' \
+    -X POST "${BASE_URL}/api/v1/appointments" \
+    -H "Authorization: Bearer ${admin_token}" \
+    -H 'Content-Type: application/json' \
+    --data "{\"professionalId\":\"${professional_id}\",\"serviceId\":\"${service_id}\",\"date\":\"${SMOKE_WEEKLY_DATE}\",\"start\":\"09:15\",\"customerName\":\"Conflict Customer\"}"
+)"
+if [[ "${appointment_conflict_status}" != "409" ]]; then
+  echo "Expected overlapping appointment to return 409, got ${appointment_conflict_status}" >&2
+  cat /tmp/barber-core-api-appointment-conflict.json >&2 || true
+  exit 1
+fi
+node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-appointment-conflict.json', 'utf8')); if (json.code !== 'APPOINTMENT_TIME_CONFLICT') process.exit(1);"
+
+appointment_cancel_status="$(
+  curl -sS -o /tmp/barber-core-api-appointment-cancel.json -w '%{http_code}' \
+    -X POST "${BASE_URL}/api/v1/appointments/${appointment_id}/cancel" \
+    -H "Authorization: Bearer ${admin_token}" \
+    -H 'Content-Type: application/json' \
+    --data '{"reason":"Customer cancelled"}'
+)"
+if [[ "${appointment_cancel_status}" != "200" ]]; then
+  echo "Expected appointment cancel to return 200, got ${appointment_cancel_status}" >&2
+  cat /tmp/barber-core-api-appointment-cancel.json >&2 || true
+  exit 1
+fi
+node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-appointment-cancel.json', 'utf8')); if (json.status !== 'cancelled') process.exit(1); if (json.cancellationReason !== 'Customer cancelled') process.exit(1);"
+
+appointment_rebook_status="$(
+  curl -sS -o /tmp/barber-core-api-appointment-rebook.json -w '%{http_code}' \
+    -X POST "${BASE_URL}/api/v1/appointments" \
+    -H "Authorization: Bearer ${admin_token}" \
+    -H 'Content-Type: application/json' \
+    --data "{\"professionalId\":\"${professional_id}\",\"serviceId\":\"${service_id}\",\"date\":\"${SMOKE_WEEKLY_DATE}\",\"start\":\"09:00\",\"customerName\":\"Rebooked Customer\"}"
+)"
+if [[ "${appointment_rebook_status}" != "201" ]]; then
+  echo "Expected appointment rebook to return 201, got ${appointment_rebook_status}" >&2
+  cat /tmp/barber-core-api-appointment-rebook.json >&2 || true
+  exit 1
+fi
+
 forbidden_status="$(
   curl -sS -o /tmp/barber-core-api-forbidden.json -w '%{http_code}' \
     -X PUT "${BASE_URL}/api/v1/professionals/${professional_id}/availability/weekly" \
@@ -302,5 +401,19 @@ if [[ "${forbidden_status}" != "403" ]]; then
   exit 1
 fi
 node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-forbidden.json', 'utf8')); if (json.code !== 'INSUFFICIENT_PERMISSIONS') process.exit(1);"
+
+appointment_forbidden_status="$(
+  curl -sS -o /tmp/barber-core-api-appointment-forbidden.json -w '%{http_code}' \
+    -X POST "${BASE_URL}/api/v1/appointments" \
+    -H "Authorization: Bearer ${barber_token}" \
+    -H 'Content-Type: application/json' \
+    --data "{\"professionalId\":\"${professional_id}\",\"serviceId\":\"${service_id}\",\"date\":\"${SMOKE_WEEKLY_DATE}\",\"start\":\"10:00\",\"customerName\":\"Forbidden Customer\"}"
+)"
+if [[ "${appointment_forbidden_status}" != "403" ]]; then
+  echo "Expected barber appointment write denial to return 403, got ${appointment_forbidden_status}" >&2
+  cat /tmp/barber-core-api-appointment-forbidden.json >&2 || true
+  exit 1
+fi
+node -e "const fs = require('node:fs'); const json = JSON.parse(fs.readFileSync('/tmp/barber-core-api-appointment-forbidden.json', 'utf8')); if (json.code !== 'INSUFFICIENT_PERMISSIONS') process.exit(1);"
 
 echo "Smoke tests passed."
