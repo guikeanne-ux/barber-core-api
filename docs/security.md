@@ -14,6 +14,7 @@ The current delivery secures the HTTP boundary with:
 - no client secret in the API for user-token validation
 - authenticated catalog routes with explicit read and write role checks
 - authenticated availability routes with the same route-level role policy style
+- authenticated appointment routes with explicit read/create/cancel role checks
 
 ## Frontend origin
 
@@ -67,3 +68,6 @@ Relevant variables:
 - `admin` and `manager` can read and write availability routes
 - `barber` and `receptionist` can read availability routes
 - write attempts by `barber` or `receptionist` return `403`
+- `admin`, `manager`, `barber`, and `receptionist` can read appointment routes
+- `admin`, `manager`, and `receptionist` can create and cancel appointments
+- `barber` cannot create or cancel appointments

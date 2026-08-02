@@ -49,6 +49,14 @@ Availability request logs should also avoid recording:
 - full override period arrays
 - unnecessary repetition of date-range query payloads
 
+Appointment request logs should also avoid recording:
+
+- customer names
+- customer phone numbers
+- notes
+- full appointment payloads
+- public exposure of raw constraint names
+
 ## Auth result categories
 
 Protected-route failures are logged with sanitized categories such as:

@@ -39,7 +39,12 @@ Current public codes:
 - `VALIDATION_ERROR`
 - `PROFESSIONAL_NOT_FOUND`
 - `SERVICE_NOT_FOUND`
-- `AVAILABILITY_RANGE_TOO_LARGE`
+- `APPOINTMENT_NOT_FOUND`
+- `PROFESSIONAL_INACTIVE`
+- `SERVICE_INACTIVE`
+- `PROFESSIONAL_SERVICE_NOT_AVAILABLE`
+- `APPOINTMENT_OUTSIDE_AVAILABILITY`
+- `APPOINTMENT_TIME_CONFLICT`
 
 `401` responses include:
 
@@ -66,3 +71,10 @@ Availability routes follow the same public format:
 - `400` for invalid dates, invalid times, overlapping periods, ranges above the documented limits, and malformed payloads
 - `404` only for missing professionals
 - `500` for unexpected persistence or application defects
+
+Appointment routes keep business conflicts explicit:
+
+- `400` for invalid local date/time input, DST-invalid local times, malformed payloads, and invalid list ranges
+- `404` only for missing professionals, services, or appointments
+- `409` for inactive professional/service state, missing professional-service capability, outside-availability intervals, and known overlap conflicts
+- `500` for unexpected persistence defects or internal composition errors such as timezone mismatches between modules

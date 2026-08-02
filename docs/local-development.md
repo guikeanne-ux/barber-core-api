@@ -46,7 +46,7 @@ During the smoke run, the script:
 - starts the temporary JWKS fixture on the host at `http://127.0.0.1:18080`
 - recreates only the `api` container with temporary OIDC values pointing to `http://host.docker.internal:18080/realms/barber`
 - confirms the effective `OIDC_ISSUER_URL`, `OIDC_JWKS_URL`, and `OIDC_AUDIENCE` inside the container before the authenticated probe
-- exercises weekly configuration, one `closed` override for `2026-08-04`, and resolved availability across `2026-08-03..2026-08-04`
+- exercises catalog creation, weekly configuration, one appointment conflict, one cancellation, and one rebooking in the same interval
 
 This temporary OIDC configuration exists only for the smoke execution. To return the API container to the normal local development configuration backed by `barber-identity`, run:
 
@@ -70,6 +70,10 @@ npm run docker:up
 - `PUT /api/v1/professionals/:professionalId/availability/overrides/:date`
 - `DELETE /api/v1/professionals/:professionalId/availability/overrides/:date`
 - `GET /api/v1/professionals/:professionalId/availability/resolved`
+- `POST /api/v1/appointments`
+- `GET /api/v1/appointments`
+- `GET /api/v1/appointments/:appointmentId`
+- `POST /api/v1/appointments/:appointmentId/cancel`
 - `GET /docs`
 - `GET /docs/json`
 

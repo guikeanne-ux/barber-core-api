@@ -10,6 +10,7 @@ Current modules:
 - `auth`
 - `catalog`
 - `availability`
+- `appointments`
 
 ## Composition
 
@@ -68,6 +69,37 @@ The module does not own appointments, slots, bookings, or service-duration-aware
 
 Cross-module collaboration remains narrow on purpose. `availability` does not import `CatalogRepository` or query catalog tables directly through handlers or services. It receives only a small catalog contract that confirms professional existence and returns `{ id }`.
 
+## Appointments module
+
+The `appointments` module owns:
+
+- appointment creation
+- appointment reads and paginated listing
+- idempotent cancellation
+- customer snapshot normalization and persistence
+- commercial snapshots for professional name, service name, duration, price, currency, and timezone
+- timezone-aware conversion between local booking input and exact instants
+- local-day boundary handling, including `end = 24:00`
+- the `AppointmentRepository` persistence boundary
+- the PostgreSQL adapter for appointment storage and conflict mapping
+
+The module does not own:
+
+- slots
+- available-times generation
+- reschedule
+- customers as a standalone aggregate
+- notifications
+- outbox or events
+
+Cross-module collaboration remains explicit and narrow:
+
+- `appointments` receives only a dedicated catalog contract with professional/service snapshot input and capability state
+- `appointments` receives only a dedicated availability contract with resolved periods for one local date
+- `appointments` does not query catalog tables directly
+- `appointments` does not query availability tables directly
+- no distributed transaction spans `catalog`, `availability`, and `appointments`
+
 ## Modular monolith rules
 
 Future modules must:
@@ -77,3 +109,4 @@ Future modules must:
 - expose only explicit contracts when cross-module collaboration becomes necessary
 - avoid querying `professionals`, `services`, or `professional_services` directly outside `catalog`
 - avoid querying availability tables directly outside `availability`
+- avoid querying `appointments` directly outside the appointments module

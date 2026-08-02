@@ -19,6 +19,7 @@ Production migrations currently create these tables:
 - `professional_weekly_periods`
 - `professional_availability_overrides`
 - `professional_availability_override_periods`
+- `appointments`
 
 Current schema characteristics:
 
@@ -34,5 +35,12 @@ Current schema characteristics:
 - `weekly_updated_at` remains nullable until the first explicit weekly configuration write
 - deterministic indexes for `status + name + id` and `name + id`
 - deterministic indexes for weekly and override range reads
+- `appointments` stores UTC instants plus a `time_zone` snapshot instead of persisting derived local `date`, `start`, or `end`
+- appointment snapshots keep professional name, service name, duration, price, currency, and timezone immutable after creation
+- `appointments` uses restrictive foreign keys to `professionals(id)` and `services(id)`
+- `appointments` uses `btree_gist` plus the named exclusion constraint `appointments_professional_scheduled_time_excl`
+- the exclusion predicate protects only `status = 'scheduled'`, so cancelled rows no longer block time
+- appointment list reads are supported by B-tree indexes on `(starts_at, id)` and `(professional_id, starts_at, id)`
+- rollback of the appointments feature removes the table but intentionally keeps the shared `btree_gist` extension installed
 
-Integration tests validate the production migrations, availability constraints, and the generic migrator behavior against disposable PostgreSQL instances started by Testcontainers.
+Integration tests validate the production migrations, availability constraints, appointment overlap protection, and the generic migrator behavior against disposable PostgreSQL instances started by Testcontainers.

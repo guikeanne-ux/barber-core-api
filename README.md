@@ -1,6 +1,6 @@
 # barber-core-api
 
-`barber-core-api` is the main HTTP API of the Barber Platform ecosystem. This repository currently implements the technical foundation, identity integration, route-level authorization, and the first business modules: `catalog` and `availability`.
+`barber-core-api` is the main HTTP API of the Barber Platform ecosystem. This repository currently implements the technical foundation, identity integration, route-level authorization, and the first business modules: `catalog`, `availability`, and `appointments`.
 
 ## Scope
 
@@ -13,12 +13,13 @@ This repository currently covers only:
 - explicit route-level authentication and authorization helpers
 - catalog management for professionals, services, and professional-service capabilities
 - professional weekly availability, date overrides, and resolved availability
+- appointment creation, reads, listing, cancellation, and real PostgreSQL overlap protection
 - error, logging, and lifecycle conventions
 - Docker and CI execution
 
 Deliberately out of scope for now:
 
-- scheduling, appointments, reservations, and slots
+- slot generation, available-times endpoints, reschedule, and completed/no-show lifecycle states
 - messaging, outbox, RabbitMQ, notifications, or workers
 
 ## What it already provides
@@ -37,6 +38,10 @@ Deliberately out of scope for now:
 - authenticated catalog endpoints for professionals and services
 - authenticated capability management between professionals and services
 - authenticated availability endpoints for weekly configuration, overrides, and resolved ranges
+- authenticated appointment endpoints for create, read, list, and cancel
+- timezone-aware local booking conversion through `@js-temporal/polyfill`
+- appointment snapshots for professional, service, price, duration, and timezone
+- PostgreSQL `btree_gist` plus exclusion constraint for double-booking prevention
 - OpenAPI generation and Swagger UI
 - unit, integration, and Docker smoke tests
 - Docker and GitHub Actions pipeline
@@ -49,6 +54,7 @@ Deliberately out of scope for now:
 - TypeBox with `@fastify/type-provider-typebox`
 - PostgreSQL `18.4`
 - Kysely and `pg`
+- `@js-temporal/polyfill`
 - Vitest and Testcontainers
 - Docker Compose and GitHub Actions
 
@@ -64,6 +70,7 @@ Current modules:
 - `auth`
 - `catalog`
 - `availability`
+- `appointments`
 
 ## Health endpoints
 
@@ -102,6 +109,7 @@ The repository now contains production migrations for:
 
 - `catalog`
 - `availability`
+- `appointments`
 
 Useful commands:
 
@@ -132,7 +140,7 @@ npm run docker:logs
 npm run smoke
 ```
 
-`npm run smoke` starts a temporary JWKS fixture on the host, recreates the `api` container with smoke-specific OIDC values that target `host.docker.internal`, validates `/api/v1/auth/me`, and then exercises the availability flow without requiring a real Keycloak container. No token, private key, or fixture state is versioned.
+`npm run smoke` starts a temporary JWKS fixture on the host, recreates the `api` container with smoke-specific OIDC values that target `host.docker.internal`, validates `/api/v1/auth/me`, and then exercises catalog, availability, and appointment flows without requiring a real Keycloak container. No token, private key, or fixture state is versioned.
 
 ## OpenAPI
 
@@ -155,8 +163,10 @@ The contract now includes:
 - `GET /api/v1/auth/me`
 - `Professionals` and `Services` tags
 - `Availability` tag
+- `Appointments` tag
 - protected catalog operations with stable `operationId` values
 - protected availability operations with stable `operationId` values
+- protected appointment operations with stable `operationId` values
 - standardized `401`, `403`, and `503` Problem Details for protected routes
 
 ## Graceful shutdown
